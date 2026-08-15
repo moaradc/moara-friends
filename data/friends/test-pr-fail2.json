@@ -1,0 +1,6 @@
+{
+  "name": "失败测试-URL不可达",
+  "avatar": "https://avatars.githubusercontent.com/u/44914786?v=4&s=640",
+  "description": "测可达性失败评论的代码块格式",
+  "url": "https://httpbin.org/status/404"
+}
