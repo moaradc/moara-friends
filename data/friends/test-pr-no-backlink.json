@@ -1,0 +1,6 @@
+{
+  "name": "测试-无backlink字段",
+  "avatar": "https://avatars.githubusercontent.com/u/44914786?v=4&s=640",
+  "description": "应该被拒绝：缺少 backlink 字段",
+  "url": "https://astro.build/"
+}
