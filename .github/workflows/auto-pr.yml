@@ -151,10 +151,23 @@ jobs:
               return;
             }
 
-            // PR 必须是 open 状态
-            if (pr.state !== 'open') {
-              core.info(`PR 状态为 ${pr.state}，跳过`);
+            // PR 状态检查：
+            // - 已合并（merged）→ 跳过（不能再改）
+            // - 已关闭（closed 但未合并）→ 自动重新打开，继续校验
+            //   （因为 triage job 失败会关闭 PR，用户评论 /recheck 说明想继续）
+            if (pr.merged) {
+              core.info(`PR 已合并，跳过`);
               return;
+            }
+            if (pr.state === 'closed') {
+              core.info(`PR 已关闭，自动重新打开以进行 recheck...`);
+              try {
+                await github.rest.pulls.update({ owner, repo, pull_number, state: 'open' });
+                core.info(`✓ PR 已重新打开`);
+              } catch (e) {
+                core.warning(`重新打开 PR 失败：${e.message}`);
+                return;
+              }
             }
 
             core.info(`✓ 开始重新校验 PR #${pull_number}`);
