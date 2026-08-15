@@ -1,0 +1,7 @@
+{
+  "name": "失败测试-带vip",
+  "avatar": "https://avatars.githubusercontent.com/u/44914786?v=4&s=640",
+  "description": "应该被拒绝并评论",
+  "url": "https://astro.build/",
+  "vip": true
+}
