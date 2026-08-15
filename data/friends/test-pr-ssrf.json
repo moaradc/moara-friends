@@ -1,0 +1,7 @@
+{
+  "name": "SSRF测试",
+  "avatar": "https://avatars.githubusercontent.com/u/44914786?v=4&s=640",
+  "description": "测试 SSRF 防护",
+  "url": "http://localhost:8080/",
+  "backlink": "http://127.0.0.1/friends/"
+}
