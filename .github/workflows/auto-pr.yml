@@ -67,7 +67,7 @@ jobs:
 
             // ========== 配置 ==========
             // 本站主站 URL，反链验证时会去对方页面找这个 URL
-            const SITE_URL = 'https://blog.945426.xyz';
+            const SITE_URL = 'https://2x.nz';
 
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
 
