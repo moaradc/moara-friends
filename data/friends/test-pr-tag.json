@@ -1,7 +1,7 @@
 {
-  "name": "Tag测试",
+  "name": "Tag测试-成功",
   "avatar": "https://avatars.githubusercontent.com/u/44914786?v=4&s=640",
-  "description": "测试 tag 功能",
-  "url": "https://astro.build/",
-  "backlink": "https://astro.build/"
+  "description": "测试成功时切换为已互链 tag",
+  "url": "https://raw-posts.945426.xyz/",
+  "backlink": "https://raw-posts.945426.xyz/link"
 }
