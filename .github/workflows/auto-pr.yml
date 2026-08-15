@@ -31,6 +31,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write  # 用于触发 build workflow (createWorkflowDispatch)
 
 env:
   PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -110,10 +111,11 @@ jobs:
             }
 
             // 最终结果评论：失败时附加修复指引
-            // 每行格式：
-            //   - 普通行：自动加 `- ` 前缀
-            //   - 空行：保留空行（用于分段）
-            //   - ``` 开头：代码块，不加前缀
+            // 每行格式自动推断：
+            //   - 空行 → 保留空行（分段）
+            //   - 已以列表前缀 (- / * / 数字.) 开头 → 不再加前缀
+            //   - 代码块 (```) 或缩进行 → 不加前缀
+            //   - 其他普通行 → 加 `- ` 前缀
             async function postResult(success, title, lines) {
               const icon = success ? '✅' : '❌';
               const body = [
@@ -122,6 +124,7 @@ jobs:
                 ...lines.map((l) => {
                   if (l === '') return '';
                   if (l.startsWith('```') || l.startsWith('    ')) return l;
+                  if (/^\s*([-*+]|\d+\.)\s/.test(l)) return l;
                   return `- ${l}`;
                 }),
                 '',
