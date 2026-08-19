@@ -26,7 +26,6 @@ import {
   validateFields,
   checkSsrf,
   checkBacklinkDomainConsistency,
-  buildFriendIndex,
   normalizeUrlForDedup,
   sleep,
   getHostname,
@@ -370,21 +369,36 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
       return;
     }
 
-    // ── 3.5 URL 重复检查（读 friends.json 聚合文件）──
-    // 不管新增还是修改，都检查 URL 是否已在 friends.json 中
-    // 例外：如果是修改操作且 URL 与原文件相同（用户没改 URL，只改其他字段）→ 不算重复
-    const friendIndex = await buildFriendIndex(github, owner, repo);
-    const urlNorm = normalizeUrlForDedup(data.url);
-    const isSameUrlAsOriginal = fileExistsInMain && originalUrl
-      && normalizeUrlForDedup(originalUrl) === urlNorm;
-    if (urlNorm && friendIndex.byUrl[urlNorm] && !isSameUrlAsOriginal) {
-      await fail('站点 URL 已存在', [
-        `你的 URL：\`${data.url}\``,
-        '',
-        '该 URL 已被收录。如需修改你已有的友链信息，请直接修改对应的友链文件（需完成域名所有权验证）。',
-        '如需收录新站点，请使用不同的 URL。',
-      ]);
-      return;
+    // ── 3.5 URL 重复检查（仅新增操作；读 friends.json 聚合文件）──
+    // 修改/删除操作跳过：
+    //   · 修改自己文件 → URL 可能本来就在 friends.json 里（合法）
+    //   · 修改别人文件 → 已被「域名所有权验证」拦截
+    //   · 删除 → 不涉及新增 URL
+    // 只在 file.status === 'added' 时检查，且只读 friends.json 一次 API
+    if (file.status === 'added') {
+      const urlNorm = normalizeUrlForDedup(data.url);
+      let urlAlreadyExists = false;
+      try {
+        const frRes = await github.rest.repos.getContent({ owner, repo, path: 'friends.json' });
+        if (frRes.data && frRes.data.content) {
+          const raw = Buffer.from(frRes.data.content, frRes.data.encoding || 'base64').toString('utf-8');
+          const friends = JSON.parse(raw);
+          if (Array.isArray(friends)) {
+            urlAlreadyExists = friends.some(f => f.url && normalizeUrlForDedup(f.url) === urlNorm);
+          }
+        }
+      } catch (e) {
+        core.warning(`读 friends.json 失败: ${e.message}`);
+      }
+      if (urlAlreadyExists) {
+        await fail('站点 URL 已存在', [
+          `你的 URL：\`${data.url}\``,
+          '',
+          '该 URL 已被收录。如需修改你已有的友链信息，请直接修改对应的友链文件（需完成域名所有权验证）。',
+          '如需收录新站点，请使用不同的 URL。',
+        ]);
+        return;
+      }
     }
 
     // ── 4. SSRF 防护 ──
