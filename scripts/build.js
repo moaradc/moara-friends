@@ -12,8 +12,9 @@
  *
  * Field schema (per file):
  *   name        string  required  站点名称
- *   url         string  required  站点 URL (http/https)
+ *   cover      string|null  optional  封面
  *   avatar      string|null  optional  头像 URL（缺失时前端可用 favicon 服务兜底）
+ *   url         string  required  站点 URL (http/https)
  *   description string  optional  简介/描述
  *   vip         boolean optional  仅站主直推 main 时可设；PR 携带会被 auto-pr.yml 拒绝
  */
@@ -93,7 +94,6 @@ function loadAndValidate(dir) {
     }
 
     // 输出标准化字段顺序，避免 git diff 噪音
-    // 顺序：name → cover → avatar → url → description → vip
     // backlink 不输出（仅用于 PR 反链验证，前端展示不需要）
     const out = {
       name: data.name,
