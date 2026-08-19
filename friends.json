@@ -7,6 +7,11 @@
     "vip": true
   },
   {
+    "name": "并发测试1",
+    "url": "https://raw-posts.945426.xyz/link",
+    "description": "并发 push 测试 1"
+  },
+  {
     "name": "站点名称",
     "url": "https://raw-posts.945426.xyz"
   },
