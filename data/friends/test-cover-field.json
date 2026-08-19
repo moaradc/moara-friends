@@ -1,0 +1,7 @@
+{
+  "name": "cover测试",
+  "url": "https://raw-posts.945426.xyz/link",
+  "description": "验证 cover 字段端到端",
+  "cover": "https://example.com/cover.jpg",
+  "backlink": "https://raw-posts.945426.xyz/link"
+}
