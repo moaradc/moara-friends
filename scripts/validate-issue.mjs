@@ -40,6 +40,8 @@ import {
   validateFilename,
   normalizeFilename,
   standardizeFriendData,
+  buildFriendIndex,
+  normalizeUrlForDedup,
   sleep,
   getHostname,
 } from './lib/validate.mjs';
@@ -270,51 +272,6 @@ async function listExistingFriends(octokit, owner, repo) {
     console.warn(`listExistingFriends failed: ${e.message}`);
   }
   return friends;
-}
-
-// 建立去重索引（仅 2 次 API 调用，与友链数量无关）：
-// - byFilename：列 data/friends/ 目录拿所有 .json 文件名（不读文件内容）
-// - byUrl：读仓库根目录的 friends.json 聚合文件，从中提取所有友链的 url
-//
-// friends.json 是 build.js 在每次合并/写入后自动重建的产物，
-// 包含所有友链的 name/url/avatar/description（不含文件名，不含 backlink）。
-// 用它做 URL 去重，不需要再逐个读 data/friends/*.json 文件。
-async function buildFriendIndex(octokit, owner, repo) {
-  const index = { byUrl: {}, byFilename: {} };
-
-  // 1. 列 data/friends/ 目录拿文件名（不读内容）
-  try {
-    const dirRes = await octokit.rest.repos.getContent({ owner, repo, path: 'data/friends' });
-    if (Array.isArray(dirRes.data)) {
-      for (const item of dirRes.data) {
-        if (item.type === 'file' && item.name.endsWith('.json')) {
-          index.byFilename[item.name] = true;
-        }
-      }
-    }
-  } catch (e) {
-    console.warn(`buildFriendIndex: list data/friends/ failed: ${e.message}`);
-  }
-
-  // 2. 读 friends.json（聚合文件）拿 url 列表
-  try {
-    const fileRes = await octokit.rest.repos.getContent({ owner, repo, path: 'friends.json' });
-    if (fileRes.data && fileRes.data.content) {
-      const raw = Buffer.from(fileRes.data.content, fileRes.data.encoding || 'base64').toString('utf-8');
-      const friends = JSON.parse(raw);
-      if (Array.isArray(friends)) {
-        for (const f of friends) {
-          if (f.url) {
-            const urlNorm = f.url.replace(/\/$/, '').toLowerCase();
-            if (urlNorm) index.byUrl[urlNorm] = true;
-          }
-        }
-      }
-    }
-  } catch (e) {
-    console.warn(`buildFriendIndex: read friends.json failed: ${e.message}`);
-  }
-  return index;
 }
 
 // ========== Git 操作：写入文件并推送 ==========
@@ -605,7 +562,7 @@ async function processIssue({ octokit, owner, repo, issue, workspace, targetBran
 
   // ── 6. 去重检查 ──
   const index = await buildFriendIndex(octokit, owner, repo);
-  const urlNorm = data.url.replace(/\/$/, '').toLowerCase();
+  const urlNorm = normalizeUrlForDedup(data.url);
 
   if (index.byUrl[urlNorm]) {
     await upsertStatusComment(octokit, owner, repo, issue_number, buildFailBody(

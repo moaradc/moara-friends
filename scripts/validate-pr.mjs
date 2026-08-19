@@ -26,6 +26,8 @@ import {
   validateFields,
   checkSsrf,
   checkBacklinkDomainConsistency,
+  buildFriendIndex,
+  normalizeUrlForDedup,
   sleep,
   getHostname,
 } from './lib/validate.mjs';
@@ -364,6 +366,23 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
         'vip 字段仅站主直推可用，PR 不可携带',
         `文件：${file.filename}`,
         '请删除 vip 字段',
+      ]);
+      return;
+    }
+
+    // ── 3.5 URL 重复检查（读 friends.json 聚合文件）──
+    // 不管新增还是修改，都检查 URL 是否已在 friends.json 中
+    // 例外：如果是修改操作且 URL 与原文件相同（用户没改 URL，只改其他字段）→ 不算重复
+    const friendIndex = await buildFriendIndex(github, owner, repo);
+    const urlNorm = normalizeUrlForDedup(data.url);
+    const isSameUrlAsOriginal = fileExistsInMain && originalUrl
+      && normalizeUrlForDedup(originalUrl) === urlNorm;
+    if (urlNorm && friendIndex.byUrl[urlNorm] && !isSameUrlAsOriginal) {
+      await fail('站点 URL 已存在', [
+        `你的 URL：\`${data.url}\``,
+        '',
+        '该 URL 已被收录。如需修改你已有的友链信息，请直接修改对应的友链文件（需完成域名所有权验证）。',
+        '如需收录新站点，请使用不同的 URL。',
       ]);
       return;
     }
