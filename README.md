@@ -83,8 +83,8 @@
   "name": "站点名称",
   "cover": "https://.../封面.jpg",
   "avatar": "https://.../头像.png",
-  "description": "简介/描述",
   "url": "https://你的站点",
+  "description": "简介/描述",
   "backlink": "https://你的站点/友链页地址"
 }
 ```
@@ -156,10 +156,10 @@
 | 字段 | 必填 | 说明 |
 |---|---|---|
 | `name` | ✅ | 站点名称 |
-| `cover` | ❌ | 封面图地址 |
+| `cover` | ❌ | 封面图地址（不校验连通性） |
 | `avatar` | ❌ | 头像图片地址 |
+| `url` | ✅ | 站点地址，以 `https://` 开头 |
 | `description` | ❌ | 简介/描述 |
-| `url` | ✅ | 站点地址，以 `https` 开头 |
 | `backlink` | ✅ | 你的友链页地址 |
 
 > `backlink` 填你自己网站上那个友链页的地址，不是首页。比如你的友链页是`https://example.com/links`，就填这个

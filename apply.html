@@ -299,16 +299,9 @@
         </div>
 
         <div class="form-group">
-          <label for="url">站点 URL <span class="required">*</span></label>
-          <input type="url" id="url" name="url" required placeholder="https://example.com">
-          <div class="hint">以 http:// 或 https:// 开头；不能与已收录友链重复</div>
-          <div class="error"></div>
-        </div>
-
-        <div class="form-group">
-          <label for="friendPageUrl">你的友链页地址 <span class="required">*</span></label>
-          <input type="url" id="friendPageUrl" name="friendPageUrl" required placeholder="https://example.com/friends">
-          <div class="hint">必须和你站点 URL 同域名（即你自己的友链页，不是首页）</div>
+          <label for="cover">封面 URL</label>
+          <input type="url" id="cover" name="cover" placeholder="https://example.com/cover.jpg">
+          <div class="hint">可选。站点封面图地址，不校验连通性</div>
           <div class="error"></div>
         </div>
 
@@ -320,9 +313,16 @@
         </div>
 
         <div class="form-group">
-          <label for="cover">封面 URL</label>
-          <input type="url" id="cover" name="cover" placeholder="https://example.com/cover.jpg">
-          <div class="hint">可选。站点封面图地址，不校验连通性</div>
+          <label for="url">站点 URL <span class="required">*</span></label>
+          <input type="url" id="url" name="url" required placeholder="https://example.com">
+          <div class="hint">以 http:// 或 https:// 开头；不能与已收录友链重复</div>
+          <div class="error"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="friendPageUrl">你的友链页地址 <span class="required">*</span></label>
+          <input type="url" id="friendPageUrl" name="friendPageUrl" required placeholder="https://example.com/friends">
+          <div class="hint">必须和你站点 URL 同域名（即你自己的友链页，不是首页）</div>
           <div class="error"></div>
         </div>
 
@@ -506,15 +506,16 @@
   }
 
   // 生成 Issue body（与服务端 parseApplication 对齐）
+  // 字段顺序：name → cover → avatar → url → friendPageUrl → description → filename
   function buildIssueBody() {
     var lines = [];
     lines.push('## Friend Link Application');
     lines.push('');
     lines.push('- Site Name: ' + ($name.value || '').trim());
+    lines.push('- Cover URL: ' + ($cover.value || '').trim());
+    lines.push('- Avatar URL: ' + ($avatar.value || '').trim());
     lines.push('- Site URL: ' + ($url.value || '').trim());
     lines.push('- Friend Page URL: ' + ($friendPageUrl.value || '').trim());
-    lines.push('- Avatar URL: ' + ($avatar.value || '').trim());
-    lines.push('- Cover URL: ' + ($cover.value || '').trim());
     lines.push('- Short Description: ' + ($description.value || '').trim());
     lines.push('- Filename: ' + normalizeFilename($filename.value));
     lines.push('- Reciprocal Link Added: yes');

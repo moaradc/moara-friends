@@ -93,14 +93,15 @@ function loadAndValidate(dir) {
     }
 
     // 输出标准化字段顺序，避免 git diff 噪音
+    // 顺序：name → cover → avatar → url → description → vip
     // backlink 不输出（仅用于 PR 反链验证，前端展示不需要）
     const out = {
       name: data.name,
-      url: data.url,
     };
-    if (data.avatar !== undefined) out.avatar = data.avatar;
-    if (data.description !== undefined) out.description = data.description;
     if (data.cover !== undefined) out.cover = data.cover;
+    if (data.avatar !== undefined) out.avatar = data.avatar;
+    out.url = data.url;
+    if (data.description !== undefined) out.description = data.description;
     if (data.vip === true) out.vip = true;
 
     result.push(out);

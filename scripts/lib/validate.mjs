@@ -629,17 +629,17 @@ export function checkBacklinkDomainConsistency(data) {
 
 /**
  * 标准化输出对象（用于写入 JSON 文件，避免字段顺序不一致产生 diff 噪音）
- * 字段顺序与 build.js 输出 friends.json 一致：name → url → avatar → description → cover → backlink
+ * 字段顺序：name → cover → avatar → url → description → backlink
  * backlink 字段保留（用于反链验证来源追溯，和 PR 路径用户原始字段保持一致）
  */
 export function standardizeFriendData(data) {
   const out = {
     name: data.name,
-    url: data.url,
   };
-  if (data.avatar !== undefined) out.avatar = data.avatar;
-  if (data.description !== undefined) out.description = data.description;
   if (data.cover !== undefined) out.cover = data.cover;
+  if (data.avatar !== undefined) out.avatar = data.avatar;
+  out.url = data.url;
+  if (data.description !== undefined) out.description = data.description;
   if (data.backlink !== undefined) out.backlink = data.backlink;
   return out;
 }
