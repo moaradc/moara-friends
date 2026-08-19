@@ -5,23 +5,5 @@
     "avatar": "https://blog.945426.xyz/assets/img/icon/moara.webp",
     "description": "沫然（moara）的个人博客 —— 技术、生活、闲谈、创作、归档",
     "vip": true
-  },
-  {
-    "name": "并发测试1",
-    "url": "https://raw-posts.945426.xyz/link",
-    "description": "并发 push 测试 1"
-  },
-  {
-    "name": "并发测试2",
-    "url": "https://raw-posts.945426.xyz/test",
-    "description": "并发 push 测试 2"
-  },
-  {
-    "name": "站点名称",
-    "url": "https://raw-posts.945426.xyz"
-  },
-  {
-    "name": "test2",
-    "url": "https://raw-posts.945426.xyz"
   }
 ]
