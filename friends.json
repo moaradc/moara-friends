@@ -13,5 +13,10 @@
   {
     "name": "test2",
     "url": "https://raw-posts.945426.xyz"
+  },
+  {
+    "name": "PR带聚合文件测试",
+    "url": "https://raw-posts.945426.xyz/link",
+    "description": "模拟 fork build.yml 自动重建 friends.json 的场景"
   }
 ]
