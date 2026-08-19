@@ -200,7 +200,7 @@ export async function fetchPage(url, { timeout = 15000 } = {}) {
   return { ok: false, errors };
 }
 
-// ========== Playwright 渲染抓取（兜底动态页面） ==========
+// ========== Playwright 渲染抓取 ==========
 let playwrightInstalled = false;
 
 async function ensurePlaywrightBrowser() {
@@ -629,7 +629,6 @@ export function checkBacklinkDomainConsistency(data) {
 
 /**
  * 标准化输出对象（用于写入 JSON 文件，避免字段顺序不一致产生 diff 噪音）
- * 字段顺序：name → cover → avatar → url → description → backlink
  * backlink 字段保留（用于反链验证来源追溯，和 PR 路径用户原始字段保持一致）
  */
 export function standardizeFriendData(data) {
