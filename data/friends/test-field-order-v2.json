@@ -1,8 +1,0 @@
-{
-  "name": "字段顺序测试v2",
-  "cover": "https://example.com/cover.jpg",
-  "avatar": "https://blog.945426.xyz/assets/img/icon/moara.webp",
-  "url": "https://raw-posts.945426.xyz/link",
-  "description": "验证字段顺序（cover 不校验连通性，avatar 用可达的）",
-  "backlink": "https://raw-posts.945426.xyz/link"
-}
