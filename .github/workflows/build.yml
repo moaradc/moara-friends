@@ -8,8 +8,6 @@ on:
       - 'scripts/build.js'
       - '.github/workflows/build.yml'
   workflow_dispatch:
-  schedule:
-    - cron: '0 * * * *'
 
 permissions:
   contents: write
