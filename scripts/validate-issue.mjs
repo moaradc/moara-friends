@@ -321,7 +321,13 @@ async function commitAndPushFriendFile({ filename, content, targetBranch, worksp
     'commit', '-m', `feat: add friend link via issue (#${process.env.ISSUE_NUMBER || 'manual'})`,
   ], { cwd: workspace });
 
-  // push 重试：网络抖动允许重试
+  // push 重试：处理两种失败
+  // 1. 网络抖动：直接重试
+  // 2. non-fast-forward（并发场景：另一个 workflow run 同时 push 了）
+  //    → git pull --rebase 拿到远端最新状态，再 push
+  //    → rebase 不会冲突（每个 Issue 写不同文件名，data/friends/*.json 互不重叠）
+  //    → 但 friends.json 可能被 build.yml 修改，rebase 时若冲突用 -X ours 保留我们的版本
+  //      （friends.json 反正会被 build.yml 重建，谁的版本都无所谓）
   let pushOk = false;
   let lastErr = null;
   for (let i = 0; i < 3; i++) {
@@ -331,7 +337,31 @@ async function commitAndPushFriendFile({ filename, content, targetBranch, worksp
       break;
     } catch (e) {
       lastErr = e.message;
-      await sleep(2000 * Math.pow(2, i));
+      const isNonFastForward = /non-fast-forward|fetch first|rejected/i.test(e.message);
+
+      if (isNonFastForward) {
+        // 并发冲突：pull --rebase 拿到远端最新状态
+        // 用 -X ours 策略：rebase 冲突时保留我们的改动
+        // （实际上每个 Issue 写不同文件名，data/friends/*.json 不会冲突；
+        //  唯一可能冲突的是 friends.json，但 build.yml 会重建，谁的版本都行）
+        try {
+          gitExec([
+            '-c', 'user.name=github-actions[bot]',
+            '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
+            '-c', 'rerere.enabled=false',  // 不记录 reuse 记录，避免污染
+            'pull', '--rebase', '-X', 'ours', 'origin', targetBranch,
+          ], { cwd: workspace });
+          // rebase 后重试 push（不走 sleep，直接进下一轮循环）
+        } catch (rebaseErr) {
+          // rebase 失败：abort rebase，避免污染工作目录
+          try { gitExec(['rebase', '--abort'], { cwd: workspace }); } catch {}
+          lastErr = `rebase failed: ${rebaseErr.message}`;
+          await sleep(2000 * Math.pow(2, i));
+        }
+      } else {
+        // 网络抖动：等待后重试
+        await sleep(2000 * Math.pow(2, i));
+      }
     }
   }
   if (!pushOk) throw new Error(`git push failed: ${lastErr}`);
