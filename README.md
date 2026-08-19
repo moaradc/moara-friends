@@ -82,6 +82,7 @@
 {
   "name": "站点名称",
   "avatar": "https://.../头像.png",
+  "cover": "https://.../封面.jpg",
   "description": "简介/描述",
   "url": "https://你的站点",
   "backlink": "https://你的站点/友链页地址"
@@ -158,6 +159,7 @@
 | `url` | ✅ | 站点地址，以 `https://` 开头 |
 | `backlink` | ✅ | 你的友链页地址 |
 | `avatar` | ❌ | 头像图片地址 |
+| `cover` | ❌ | 封面图地址（不校验连通性） |
 | `description` | ❌ | 简介/描述 |
 
 > `backlink` 填你自己网站上那个友链页的地址，不是首页。比如你的友链页是`https://example.com/links`，就填这个

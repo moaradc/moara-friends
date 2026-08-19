@@ -33,6 +33,7 @@ export const SCHEMA_FIELDS = {
   backlink:    { required: true,  type: 'httpUrl' },
   avatar:      { required: false, type: 'nullOrString' },
   description: { required: false, type: 'string' },
+  cover:       { required: false, type: 'nullOrString' },  // 封面图 URL，可选，不检查连通性
 };
 
 // 文件名规则：英文/数字/下划线/短横线，可选 .json 后缀
@@ -561,6 +562,8 @@ export function validateFields(data) {
     errs.push('`avatar` 必须是字符串或 `null`（或省略）');
   if (data.description !== undefined && typeof data.description !== 'string')
     errs.push('`description` 必须是字符串（或省略）');
+  if (data.cover !== undefined && !isNullOrString(data.cover))
+    errs.push('`cover` 必须是字符串或 `null`（或省略）');
 
   if (!isNonEmptyString(data.backlink)) {
     errs.push('`backlink` 必填且为非空字符串（你的友链页 URL）');
@@ -626,7 +629,7 @@ export function checkBacklinkDomainConsistency(data) {
 
 /**
  * 标准化输出对象（用于写入 JSON 文件，避免字段顺序不一致产生 diff 噪音）
- * 字段顺序与 build.js 输出 friends.json 一致：name → url → avatar → description → backlink
+ * 字段顺序与 build.js 输出 friends.json 一致：name → url → avatar → description → cover → backlink
  * backlink 字段保留（用于反链验证来源追溯，和 PR 路径用户原始字段保持一致）
  */
 export function standardizeFriendData(data) {
@@ -636,6 +639,7 @@ export function standardizeFriendData(data) {
   };
   if (data.avatar !== undefined) out.avatar = data.avatar;
   if (data.description !== undefined) out.description = data.description;
+  if (data.cover !== undefined) out.cover = data.cover;
   if (data.backlink !== undefined) out.backlink = data.backlink;
   return out;
 }

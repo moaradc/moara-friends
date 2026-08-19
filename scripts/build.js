@@ -77,6 +77,8 @@ function loadAndValidate(dir) {
       errs.push('avatar 必须是字符串或 null（或省略）');
     if (data.description !== undefined && typeof data.description !== 'string')
       errs.push('description 必须是字符串');
+    if (data.cover !== undefined && !isNullOrString(data.cover))
+      errs.push('cover 必须是字符串或 null（或省略）');
     if (data.vip !== undefined && typeof data.vip !== 'boolean')
       errs.push('vip 必须是 boolean');
     // backlink 字段：build 不强制要求（PR 校验在 auto-pr.yml 里做），
@@ -98,6 +100,7 @@ function loadAndValidate(dir) {
     };
     if (data.avatar !== undefined) out.avatar = data.avatar;
     if (data.description !== undefined) out.description = data.description;
+    if (data.cover !== undefined) out.cover = data.cover;
     if (data.vip === true) out.vip = true;
 
     result.push(out);

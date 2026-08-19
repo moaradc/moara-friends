@@ -320,6 +320,13 @@
         </div>
 
         <div class="form-group">
+          <label for="cover">封面 URL</label>
+          <input type="url" id="cover" name="cover" placeholder="https://example.com/cover.jpg">
+          <div class="hint">可选。站点封面图地址，不校验连通性</div>
+          <div class="error"></div>
+        </div>
+
+        <div class="form-group">
           <label for="description">站点简介</label>
           <textarea id="description" name="description" rows="2" maxlength="120" placeholder="一两句话介绍你的站点"></textarea>
           <div class="hint">可选。最多 120 字</div>
@@ -381,6 +388,7 @@
   var $url = document.getElementById('url');
   var $friendPageUrl = document.getElementById('friendPageUrl');
   var $avatar = document.getElementById('avatar');
+  var $cover = document.getElementById('cover');
   var $description = document.getElementById('description');
   var $filename = document.getElementById('filename');
   var $confirmBacklink = document.getElementById('confirm-backlink');
@@ -475,6 +483,11 @@
       setError($avatar, '该地址不在公网范围内'); ok = false;
     } else setError($avatar, '');
 
+    // cover 字段：只校验 URL 格式，不检查连通性
+    if ($cover.value && !isHttpUrl($cover.value)) {
+      setError($cover, '必须是 http:// 或 https:// 开头的 URL'); ok = false;
+    } else setError($cover, '');
+
     if ($description.value && $description.value.length > 120) {
       setError($description, '简介最长 120 字符'); ok = false;
     } else setError($description, '');
@@ -501,6 +514,7 @@
     lines.push('- Site URL: ' + ($url.value || '').trim());
     lines.push('- Friend Page URL: ' + ($friendPageUrl.value || '').trim());
     lines.push('- Avatar URL: ' + ($avatar.value || '').trim());
+    lines.push('- Cover URL: ' + ($cover.value || '').trim());
     lines.push('- Short Description: ' + ($description.value || '').trim());
     lines.push('- Filename: ' + normalizeFilename($filename.value));
     lines.push('- Reciprocal Link Added: yes');
@@ -541,7 +555,7 @@
   }
 
   // 事件绑定
-  [$name, $url, $friendPageUrl, $avatar, $description, $filename].forEach(function ($el) {
+  [$name, $url, $friendPageUrl, $avatar, $cover, $description, $filename].forEach(function ($el) {
     $el.addEventListener('input', updatePreview);
     $el.addEventListener('change', updatePreview);
   });

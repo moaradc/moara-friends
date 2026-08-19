@@ -99,6 +99,7 @@ export function parseApplication(body = '') {
     url:            values['site url'] || '',
     friendPageUrl:  values['friend page url'] || '',
     avatar:         values['avatar url'] || '',
+    cover:          values['cover url'] || '',
     description:    values['short description'] || '',
     filename:       values['filename'] || '',
     reciprocalLinkAdded: values['reciprocal link added'] || '',
@@ -542,6 +543,7 @@ async function processIssue({ octokit, owner, repo, issue, workspace, targetBran
     backlink: app.friendPageUrl,
   };
   if (app.avatar) data.avatar = app.avatar;
+  if (app.cover) data.cover = app.cover;
   if (app.description) data.description = app.description;
 
   const fieldResult = validateFields(data);
