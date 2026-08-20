@@ -292,6 +292,17 @@
 
       <form id="friend-form" autocomplete="on">
         <div class="form-group">
+          <label for="action">操作类型 <span class="required">*</span></label>
+          <select id="action" name="action" required>
+            <option value="add">新增友链（[Friend Link]）</option>
+            <option value="edit">修改友链（[Edit]）</option>
+            <option value="delete">删除友链（[Delete]）</option>
+          </select>
+          <div class="hint">修改/删除需要域名所有权验证（同 PR 路径）</div>
+          <div class="error"></div>
+        </div>
+
+        <div class="form-group">
           <label for="name">站点名称 <span class="required">*</span></label>
           <input type="text" id="name" name="name" required maxlength="60" placeholder="如：示例博客">
           <div class="hint">将作为友链显示名，不能与已有友链重名</div>
@@ -384,6 +395,7 @@
   var ISSUE_NEW_URL = 'https://github.com/' + REPO_OWNER + '/' + REPO_NAME + '/issues/new';
 
   // 字段引用
+  var $action = document.getElementById('action');
   var $name = document.getElementById('name');
   var $url = document.getElementById('url');
   var $friendPageUrl = document.getElementById('friendPageUrl');
@@ -506,11 +518,12 @@
   }
 
   // 生成 Issue body（与服务端 parseApplication 对齐）
-  // 字段顺序：name → cover → avatar → url → friendPageUrl → description → filename
+  // 字段顺序：action → name → cover → avatar → url → friendPageUrl → description → filename
   function buildIssueBody() {
     var lines = [];
     lines.push('## Friend Link Application');
     lines.push('');
+    lines.push('- Action: ' + ($action.value || 'add'));
     lines.push('- Site Name: ' + ($name.value || '').trim());
     lines.push('- Cover URL: ' + ($cover.value || '').trim());
     lines.push('- Avatar URL: ' + ($avatar.value || '').trim());
@@ -522,15 +535,17 @@
     return lines.join('\n');
   }
 
+  // 生成 Issue 标题（根据 action 选择前缀）
+  function buildIssueTitle() {
+    var action = $action.value || 'add';
+    var name = ($name.value || '').trim() || '未命名站点';
+    var prefix = action === 'edit' ? '[Edit] ' : action === 'delete' ? '[Delete] ' : '[Friend Link] ';
+    return prefix + name;
+  }
+
   function normalizeFilename(s) {
     if (!s) return s;
     return s.endsWith('.json') ? s : s + '.json';
-  }
-
-  // 生成 Issue title
-  function buildIssueTitle() {
-    var name = ($name.value || '').trim() || '未命名站点';
-    return '[Friend Link] ' + name;
   }
 
   // 更新预览
@@ -556,7 +571,7 @@
   }
 
   // 事件绑定
-  [$name, $url, $friendPageUrl, $avatar, $cover, $description, $filename].forEach(function ($el) {
+  [$action, $name, $url, $friendPageUrl, $avatar, $cover, $description, $filename].forEach(function ($el) {
     $el.addEventListener('input', updatePreview);
     $el.addEventListener('change', updatePreview);
   });

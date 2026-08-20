@@ -53,7 +53,56 @@
 > 
 > 为避免频繁邮件打扰，所有状态更新会合并到同一条评论
 > 
-> 修改/删除已有友链请走下方 PR 流程（需域名所有权验证）。Issue 路径仅支持新增。
+> Issue 路径也支持**修改/删除**已有友链（需域名所有权验证，同 PR 路径），见下方「修改/删除友链」。
+
+#### 6. 修改/删除友链（Issue 路径）
+
+apply.html 表单的「操作类型」可选 `add` / `edit` / `delete`，对应 Issue 标题前缀：
+- `add` → `[Friend Link]`（新增）
+- `edit` → `[Edit]`（修改）
+- `delete` → `[Delete]`（删除）
+
+**修改友链**（`[Edit]` 标题）：
+- 填写要修改的文件名（Filename）
+- 填写新字段值（未填的字段保留原值）
+- 通过域名所有权验证
+
+**删除友链**（`[Delete]` 标题）：
+- 填写要删除的文件名（Filename）
+- 通过域名所有权验证
+
+**域名验证方式**（同 PR 路径）：
+
+- **A：DNS TXT 记录** — 在你域名下添加 TXT 记录，内容 `moara-friends=<Issue编号>`
+- **B：文件验证** — 在网站根目录放 `.moara-friends-verify.txt`，内容 `moara-friends=<Issue编号>`
+
+验证通过后，bot 会执行修改/删除并触发 build workflow 重建 friends.json。
+
+#### 评论触发修改/删除
+
+也可以在**任意友链 Issue**（`[Friend Link]` / `[Edit]` / `[Delete]` 标题）的评论区用 `/edit` `/delete` 命令触发：
+
+```
+/edit
+- Filename: example.json
+- Site Name: 新名称（可选）
+- Site URL: https://新URL（可选）
+- Friend Page URL: https://新友链页（可选）
+```
+
+```
+/delete
+- Filename: example.json
+```
+
+**规则**：
+- 评论必须**同时包含命令 + 模板**才触发（防止恶意篡改）
+- 只包含命令或只包含模板 → bot 留评论提示，不触发
+- 模板至少需要 `Filename` 字段
+- 仍然需要域名所有权验证（验证码 `moara-friends=<Issue编号>`）
+
+> 标题前缀 `[Friend Link]` / `[Edit]` / `[Delete]` 都能触发 issue-bot 处理。
+> `[Edit]` / `[Delete]` 标题会自动推断 action，不需要在 body 里再写 `Action: edit`。
 
 ---
 

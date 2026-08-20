@@ -3,19 +3,21 @@ name: issue-bot
 # 友链申请 Issue 自动审核 + 写入仓库
 #
 # 设计：
-# - 监听 issues.opened（标题以 [Friend Link] 开头）：首次申请
-# - 监听 issue_comment.created：评论 /recheck 触发重新校验
-# - workflow_dispatch.review：批量重试所有开放 [Friend Link] Issue
+# - 监听 issues.opened（标题以 [Friend Link] / [Edit] / [Delete] 开头）：
+#   · [Friend Link] → 新增友链
+#   · [Edit] → 修改友链（需域名验证）
+#   · [Delete] → 删除友链（需域名验证）
+# - 监听 issue_comment.created：
+#   · /recheck → 重新校验
+#   · /edit + 模板 → 修改友链（需域名验证）
+#   · /delete + 模板 → 删除友链（需域名验证）
+# - workflow_dispatch.review：批量重试所有开放友链 Issue
 #
-# - 浏览器只生成预填 Issue 草稿 URL，不持有仓库写权限
-# - 校验通过后直接 git push data/friends/<filename>.json
-# - 触发 build.yml 重建 friends.json + 刷 jsDelivr
-# - 仅支持「新增」；修改/删除仍走 PR 路径（auto-pr.yml + 域名所有权验证）
-# - 当前不做冷却等待（COOLDOWN_MS=0），预留位置可调
-#
-# 重新校验规则：
-# - 已 accepted 的 Issue 不重试（避免重复写入）
-# - 已 rejected 的 Issue 允许重试（用户修复后评论 /recheck）
+# 安全机制：
+# - 修改/删除需要域名所有权验证（DNS TXT 或 .moara-friends-verify.txt）
+# - 验证码格式：moara-friends=<Issue编号>（同 PR 路径）
+# - 评论触发 /edit /delete 必须同时包含命令 + 完整模板
+# - 只包含命令或只包含模板时只留评论提示，不触发
 
 on:
   issues:
@@ -35,22 +37,32 @@ permissions:
   actions: write
 
 concurrency:
-  # 每个 Issue 独立 group，避免同时多个 Issue 互相取消。
-  # issue_comment 事件用 issue 编号加入 group
-  # workflow_dispatch 共用同一 group：批量重试时也至多一个 run
+  # 每个 Issue 独立 group，避免同时多个 Issue 互相取消
   group: issue-bot-${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && github.event.issue.number || 'manual' }}
   cancel-in-progress: false
 
 jobs:
   process:
-    # 只在上游仓库运行，fork 仓库不运行
-    # 原因：issue-bot 会 git push data/friends/*.json 到 main 分支
-    # fork 仓库即使触发也没意义（Issue 申请的是 fork 自己的友链，不是上游的）
+    # 只在上游仓库运行
+    # 标题前缀支持：[Friend Link] / [Edit] / [Delete]
+    # 评论命令支持：/recheck /edit /delete
     if: |
       github.repository == 'moaradc/moara-friends' && (
         github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'issues' && startsWith(github.event.issue.title, '[Friend Link]')) ||
-        (github.event_name == 'issue_comment' && startsWith(github.event.issue.title, '[Friend Link]') && startsWith(github.event.comment.body, '/recheck'))
+        (github.event_name == 'issues' && (
+          startsWith(github.event.issue.title, '[Friend Link]') ||
+          startsWith(github.event.issue.title, '[Edit]') ||
+          startsWith(github.event.issue.title, '[Delete]')
+        )) ||
+        (github.event_name == 'issue_comment' && (
+          startsWith(github.event.issue.title, '[Friend Link]') ||
+          startsWith(github.event.issue.title, '[Edit]') ||
+          startsWith(github.event.issue.title, '[Delete]')
+        ) && (
+          startsWith(github.event.comment.body, '/recheck') ||
+          startsWith(github.event.comment.body, '/edit') ||
+          startsWith(github.event.comment.body, '/delete')
+        ))
       )
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -59,7 +71,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # 完整历史：commitAndPushFriendFile 的 push 需要本地 HEAD 与远端一致
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -71,7 +82,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Process friend-link issue (opened)
+      - name: Process issue (opened)
         if: github.event_name == 'issues'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -83,7 +94,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { runIssueBot } = await import('${{ github.workspace }}/scripts/validate-issue.mjs');
-            // mode = issue action（opened）
             const mode = process.env.ISSUE_ACTION || 'opened';
             await runIssueBot({
               mode,
@@ -93,19 +103,28 @@ jobs:
               env: process.env,
             });
 
-      - name: Process /recheck command (issue comment)
+      - name: Process comment command (/recheck /edit /delete)
         if: github.event_name == 'issue_comment'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
           FRIEND_LINK_TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { runIssueBot } = await import('${{ github.workspace }}/scripts/validate-issue.mjs');
+            // 根据评论内容决定 mode
+            const body = (process.env.COMMENT_BODY || '').trim().toLowerCase();
+            let mode = 'recheck';  // 默认 /recheck
+            if (body.startsWith('/edit')) {
+              mode = 'comment_edit';
+            } else if (body.startsWith('/delete')) {
+              mode = 'comment_delete';
+            }
             await runIssueBot({
-              mode: 'recheck',
+              mode,
               github,
               core,
               context,
