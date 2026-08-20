@@ -695,15 +695,27 @@ async function processApplicationIssue({ octokit, owner, repo, issue, workspace,
       owner, repo, issue_number, per_page: 100,
     });
     const allBodies = comments.map(c => c.body || '').join('\n');
-    const hasDone = allBodies.includes(DONE_MARKERS[action]);
+    // add 流程的「已完成」要认三种标记：accepted / edited / deleted。
+    // 状态卡片每次处理会被整体替换，edit/delete 成功后旧的 accepted 标记就没了；
+    // 只认 accepted 的话 /recheck 会在 edit 后误重跑 add（报文件名占用）、
+    // 在 delete 后复活已删除的友链
+    let hasDone = false;
+    let doneReason = null;
+    if (action === 'add') {
+      if (allBodies.includes(MARKER_DELETED)) { hasDone = true; doneReason = 'already_deleted'; }
+      else if (allBodies.includes(MARKER_EDITED) || allBodies.includes(MARKER_ACCEPTED)) { hasDone = true; doneReason = 'already_accepted'; }
+    } else {
+      hasDone = allBodies.includes(DONE_MARKERS[action]);
+      doneReason = 'already_edited';
+    }
     const hasRejected = allBodies.includes(MARKER_REJECTED);
 
     if (hasDone) {
       // /edit 允许对已修改过的 Issue 再次修改（显式触发；
       // 写入幂等，且每次都会重新做域名所有权验证，安全）
       if (!(action === 'edit' && forceReprocess)) {
-        log(`⏭️  Issue #${issue_number} 已完成（${action}），跳过`);
-        return { skipped: true, reason: action === 'add' ? 'already_accepted' : 'already_edited' };
+        log(`⏭️  Issue #${issue_number} 已完成（${doneReason}），跳过`);
+        return { skipped: true, reason: doneReason };
       }
       log(`🔄 Issue #${issue_number} 之前已修改过，再次执行修改`);
     }
