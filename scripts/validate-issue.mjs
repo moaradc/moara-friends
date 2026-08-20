@@ -182,9 +182,11 @@ async function addLabels(octokit, owner, repo, issue_number, labels) {
 
 // 状态标签互斥管理：「已互链」「未通过」「已删除」只允许同时存在一个
 // 「友链」标签始终保留
+// 颜色与 PR 路径（validate-pr.mjs 的 labelColors）保持一致
 // 调用方式：syncStatusLabels(octokit, owner, repo, issue_number, '未通过')
 //   → add「友链」+「未通过」，remove「已互链」+「已删除」
 const STATUS_LABEL_COLORS = {
+  '友链': '0e8a16',
   '已互链': '0e8a16',
   '未通过': 'd73a4a',
   '已删除': '6f42c1',
@@ -192,8 +194,8 @@ const STATUS_LABEL_COLORS = {
 const ALL_STATUS_LABELS = ['已互链', '未通过', '已删除'];
 
 async function syncStatusLabels(octokit, owner, repo, issue_number, activeLabel) {
-  // 确保 label 存在
-  for (const name of [activeLabel, ...ALL_STATUS_LABELS]) {
+  // 确保 label 存在（友链 + 所有状态标签）
+  for (const name of ['友链', activeLabel, ...ALL_STATUS_LABELS]) {
     await ensureLabel(octokit, owner, repo, name, STATUS_LABEL_COLORS[name] || 'ededed');
   }
 
