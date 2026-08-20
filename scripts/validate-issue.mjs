@@ -180,6 +180,56 @@ async function addLabels(octokit, owner, repo, issue_number, labels) {
   }
 }
 
+// 状态标签互斥管理：「已互链」「未通过」「已删除」只允许同时存在一个
+// 「友链」标签始终保留
+// 调用方式：syncStatusLabels(octokit, owner, repo, issue_number, '未通过')
+//   → add「友链」+「未通过」，remove「已互链」+「已删除」
+const STATUS_LABEL_COLORS = {
+  '已互链': '0e8a16',
+  '未通过': 'd73a4a',
+  '已删除': '6f42c1',
+};
+const ALL_STATUS_LABELS = ['已互链', '未通过', '已删除'];
+
+async function syncStatusLabels(octokit, owner, repo, issue_number, activeLabel) {
+  // 确保 label 存在
+  for (const name of [activeLabel, ...ALL_STATUS_LABELS]) {
+    await ensureLabel(octokit, owner, repo, name, STATUS_LABEL_COLORS[name] || 'ededed');
+  }
+
+  // add「友链」+ activeLabel
+  const addList = ['友链', activeLabel].filter(l => ALL_STATUS_LABELS.includes(l) ? l !== activeLabel : true);
+  // 去重 + 确保包含 activeLabel
+  const addSet = new Set(['友链', activeLabel]);
+  try {
+    await withRetry(
+      () => octokit.rest.issues.addLabels({
+        owner, repo, issue_number, labels: Array.from(addSet),
+      }),
+      { name: `addLabels(${Array.from(addSet).join(',')})` }
+    );
+  } catch (e) {
+    console.warn(`syncStatusLabels addLabels 失败: ${e.message}`);
+  }
+
+  // remove 互斥的其他状态标签
+  const removeList = ALL_STATUS_LABELS.filter(l => l !== activeLabel);
+  for (const name of removeList) {
+    try {
+      await withRetry(
+        () => octokit.rest.issues.removeLabel({ owner, repo, issue_number, name }),
+        { name: `removeLabel(${name})` }
+      );
+      console.log(`✓ 删除 tag: ${name}`);
+    } catch (e) {
+      // 404 = 标签不存在（正常情况），静默跳过
+      if (e.status !== 404) {
+        console.warn(`removeLabel ${name} 失败: ${e.message}`);
+      }
+    }
+  }
+}
+
 // 查找本 Issue 中 bot 发的「状态卡片」主评论（带 MARKER_STATUS_CARD）
 // 返回 comment id 或 null
 async function findStatusCardComment(octokit, owner, repo, issue_number) {
@@ -556,7 +606,7 @@ async function failAndClose({ octokit, owner, repo, issue_number, core, title, l
   await upsertStatusComment(octokit, owner, repo, issue_number,
     buildFailBody(title, lines, { retryCommand, reprocess }));
   await closeIssue(octokit, owner, repo, issue_number, 'not_planned');
-  await addLabels(octokit, owner, repo, issue_number, ['友链', '未通过']);
+  await syncStatusLabels(octokit, owner, repo, issue_number, '未通过');
   return { ok: false, reason };
 }
 
@@ -1011,9 +1061,7 @@ async function processApplicationIssue({ octokit, owner, repo, issue, workspace,
       verifiedVia,
     }));
 
-  await ensureLabel(octokit, owner, repo, '友链', '0e8a16');
-  await ensureLabel(octokit, owner, repo, '已互链', '0e8a16');
-  await addLabels(octokit, owner, repo, issue_number, ['友链', '已互链']);
+  await syncStatusLabels(octokit, owner, repo, issue_number, '已互链');
 
   await closeIssue(octokit, owner, repo, issue_number, 'completed');
 
@@ -1187,9 +1235,7 @@ async function processDeleteIssue({ octokit, owner, repo, issue, workspace, targ
       verifiedVia: own.method,
     }));
 
-  await ensureLabel(octokit, owner, repo, '友链', '0e8a16');
-  await ensureLabel(octokit, owner, repo, '已删除', '6f42c1');
-  await addLabels(octokit, owner, repo, issue_number, ['友链', '已删除']);
+  await syncStatusLabels(octokit, owner, repo, issue_number, '已删除');
 
   await closeIssue(octokit, owner, repo, issue_number, 'completed');
 
