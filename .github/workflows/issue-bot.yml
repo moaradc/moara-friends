@@ -4,7 +4,6 @@ name: issue-bot
 #
 # 设计：
 # - 监听 issues.opened（标题以 [Friend Link] 开头）：首次申请
-# - 监听 issues.reopened：失败后重新打开 Issue，触发重新校验
 # - 监听 issue_comment.created：评论 /recheck 触发重新校验
 # - workflow_dispatch.review：批量重试所有开放 [Friend Link] Issue
 #
@@ -16,11 +15,11 @@ name: issue-bot
 #
 # 重新校验规则：
 # - 已 accepted 的 Issue 不重试（避免重复写入）
-# - 已 rejected 的 Issue 允许重试（用户修复后重新打开或评论 /recheck）
+# - 已 rejected 的 Issue 允许重试（用户修复后评论 /recheck）
 
 on:
   issues:
-    types: [opened, reopened]
+    types: [opened]
   issue_comment:
     types: [created]
   workflow_dispatch:
@@ -37,10 +36,8 @@ permissions:
 
 concurrency:
   # 每个 Issue 独立 group，避免同时多个 Issue 互相取消。
-  # issue_comment 事件用 issue 编号加入 group，和 reopened 共用 group
-  # 避免评论触发的同时 reopened 也触发产生竞态。
-  # workflow_dispatch 共用同一 group：批量重试时也至多一个 run，
-  # 避免并发处理同一组待审 Issue 产生竞态。
+  # issue_comment 事件用 issue 编号加入 group
+  # workflow_dispatch 共用同一 group：批量重试时也至多一个 run
   group: issue-bot-${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && github.event.issue.number || 'manual' }}
   cancel-in-progress: false
 
@@ -74,7 +71,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Process friend-link issue (opened/reopened)
+      - name: Process friend-link issue (opened)
         if: github.event_name == 'issues'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,7 +83,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { runIssueBot } = await import('${{ github.workspace }}/scripts/validate-issue.mjs');
-            // mode = issue action（opened 或 reopened）
+            // mode = issue action（opened）
             const mode = process.env.ISSUE_ACTION || 'opened';
             await runIssueBot({
               mode,
