@@ -40,6 +40,7 @@
 ## Friend Link Application
 
 - Site Name: 示例博客
+- Cover URL: https://example.com/cover.jpg
 - Avatar URL: https://example.com/avatar.png
 - Site URL: https://example.com
 - Friend Page URL: https://example.com/friends
@@ -47,7 +48,7 @@
 - Filename: example.json
 ```
 
-其中 Avatar URL、Cover URL、Short Description 是可留空的，其他必填。Filename 是你的友链在仓库里的文件名，建议用你的域名
+其中 Cover URL、Avatar URL、Short Description 是可留空的，其他必填。Filename 是你的友链在仓库里的文件名，建议用你的域名
 
 ### 第 3 步：等结果（约 1-2 分钟）
 
