@@ -211,7 +211,7 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
           const dnsResult = await verifyDnsTxt(hostname, verificationCode);
           if (dnsResult) {
             verified = true;
-            verifiedMethod = `DNS TXT (${dnsResult})`;
+            verifiedMethod = 'DNS TXT';
           }
         }
 
@@ -230,7 +230,7 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
           }
           if (fileResult && fileResult.url) {
             verified = true;
-            verifiedMethod = `文件验证 (${fileResult.url})`;
+            verifiedMethod = '文件验证';
           }
         }
 
