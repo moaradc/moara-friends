@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>申请友链 - 沫然Blog</title>
+<title>友链自助管理（申请/修改/删除） - 沫然Blog</title>
 <style>
   :root {
     --bg: #f7f8fa;
@@ -221,6 +221,38 @@
     margin-top: 8px;
     flex-wrap: wrap;
   }
+  .mode-selector {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .mode-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .mode-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .mode-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+  .alert-warning {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning);
+    color: var(--text);
+  }
+  .alert-warning strong { color: var(--warning); }
   .preview-block {
     background: var(--code-bg);
     border: 1px solid var(--border);
@@ -258,12 +290,34 @@
 <body>
   <div class="container">
     <header>
-      <h1>申请友链</h1>
-      <p>填写下方表单，登录 GitHub 提交 Issue 即可，无需 Fork 仓库</p>
+      <h1>友链自助管理</h1>
+      <p>申请 / 修改 / 删除友链，登录 GitHub 提交 Issue 即可，无需 Fork 仓库</p>
     </header>
 
-    <!-- Step 1: 添加本站链接到你的友链页 -->
+    <!-- Mode selector -->
     <div class="card">
+      <h2>选择操作</h2>
+      <div class="mode-selector">
+        <button type="button" class="mode-btn active" data-mode="add">➕ 申请友链</button>
+        <button type="button" class="mode-btn" data-mode="edit">✏️ 修改友链</button>
+        <button type="button" class="mode-btn" data-mode="delete">🗑️ 删除友链</button>
+      </div>
+      <p class="muted" id="mode-desc">
+        首次申请友链。提交后自动校验并写入仓库，全程无需人工审核。
+      </p>
+      <div class="alert alert-warning" id="ownership-notice" style="display: none;">
+        <strong>🔐 修改/删除需要域名所有权验证</strong><br>
+        为防止恶意改动，提交后需完成域名所有权验证（两种方式任选其一）：
+        <ul style="margin: 8px 0 0; padding-left: 20px;">
+          <li><strong>DNS TXT 记录</strong>：在你的域名下添加 TXT 记录，内容为 <code>moara-friends=&lt;Issue编号&gt;</code></li>
+          <li><strong>文件验证</strong>：在网站根目录上传 <code>.moara-friends-verify.txt</code>，内容为 <code>moara-friends=&lt;Issue编号&gt;</code></li>
+        </ul>
+        提交 Issue 后，bot 会在评论中给出具体的验证码和操作指引。完成验证后在该 Issue 评论对应命令即可重新触发。
+      </div>
+    </div>
+
+    <!-- Step 1: 添加本站链接到你的友链页（add / edit 模式） -->
+    <div class="card" id="card-backlink">
       <h2><span class="num">1</span> 先在你的友链页加上本站链接</h2>
       <p>这一步<strong>必须先做</strong>。提交后会自动抓取你的友链页检查是否已添加本站链接。</p>
       <div class="info-block">
@@ -283,67 +337,74 @@
       </div>
     </div>
 
-    <!-- Step 2: 填写站点资料 -->
-    <div class="card">
-      <h2><span class="num">2</span> 填写站点资料</h2>
-      <div class="alert alert-info">
+    <!-- Step 2: 填写站点资料（add / edit 全字段；delete 仅文件名） -->
+    <div class="card" id="card-form">
+      <h2><span class="num">2</span> <span id="form-title">填写站点资料</span></h2>
+      <div class="alert alert-info" id="form-tip">
         💡 填写完成后会生成一个 GitHub Issue 草稿链接，点链接登录 GitHub 并提交即可。
+      </div>
+      <div class="alert alert-warning" id="edit-tip" style="display: none;">
+        ✏️ 修改模式：填写<strong>修改后的完整信息</strong>（不是只填变化的字段）。Filename 必须与已收录的友链文件一致，可在仓库 <a href="https://github.com/moaradc/moara-friends/tree/main/data/friends" target="_blank">data/friends/</a> 目录查看。
+      </div>
+
+      <div class="alert alert-warning" id="delete-tip" style="display: none;">
+        🗑️ 删除模式：只需填写要删除的友链文件名，可在仓库 <a href="https://github.com/moaradc/moara-friends/tree/main/data/friends" target="_blank">data/friends/</a> 目录查看你的文件名。提交后需完成域名所有权验证。
       </div>
 
       <form id="friend-form" autocomplete="on">
-        <div class="form-group">
+        <div class="form-group" id="field-name">
           <label for="name">站点名称 <span class="required">*</span></label>
           <input type="text" id="name" name="name" required maxlength="60" placeholder="如：示例博客">
           <div class="hint">将作为友链显示名，不能与已有友链重名</div>
           <div class="error"></div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="field-cover">
           <label for="cover">封面 URL</label>
           <input type="url" id="cover" name="cover" placeholder="https://example.com/cover.jpg">
           <div class="hint">可选。站点封面图地址，不校验连通性</div>
           <div class="error"></div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="field-avatar">
           <label for="avatar">头像 URL</label>
           <input type="url" id="avatar" name="avatar" placeholder="https://example.com/avatar.png">
           <div class="hint">可选。留空时前端会用 favicon 兜底；填写时必须是可访问的图片地址</div>
           <div class="error"></div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="field-url">
           <label for="url">站点 URL <span class="required">*</span></label>
           <input type="url" id="url" name="url" required placeholder="https://example.com">
           <div class="hint">以 http:// 或 https:// 开头；不能与已收录友链重复</div>
           <div class="error"></div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="field-friendPageUrl">
           <label for="friendPageUrl">你的友链页地址 <span class="required">*</span></label>
           <input type="url" id="friendPageUrl" name="friendPageUrl" required placeholder="https://example.com/friends">
           <div class="hint">必须和你站点 URL 同域名（即你自己的友链页，不是首页）</div>
           <div class="error"></div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="field-description">
           <label for="description">站点简介</label>
           <textarea id="description" name="description" rows="2" maxlength="120" placeholder="一两句话介绍你的站点"></textarea>
           <div class="hint">可选。最多 120 字</div>
           <div class="error"></div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="field-filename">
           <label for="filename">文件名 <span class="required">*</span></label>
           <input type="text" id="filename" name="filename" required pattern="[A-Za-z0-9_\-]+(\.json)?" placeholder="如：example 或 example.json">
-          <div class="hint">只能用英文字母、数字、短横线、下划线；可选 .json 后缀。建议用站点域名</div>
+          <div class="hint" id="filename-hint">只能用英文字母、数字、短横线、下划线；可选 .json 后缀。建议用站点域名</div>
           <div class="error"></div>
         </div>
       </form>
     </div>
 
     <!-- Step 3: 提交 Issue -->
-    <div class="card">
+    <div class="card" id="card-submit">
       <h2><span class="num">3</span> 生成并提交 Issue</h2>
       <p>检查下方预览内容，确认无误后点击「登录 GitHub 并提交」。</p>
       <div class="preview-block" id="issue-preview">请先完成上方表单填写...</div>
@@ -361,12 +422,13 @@
         <li>字段格式</li>
         <li>SSRF 防护（拒绝内网地址）</li>
         <li>回链域名一致性（url 和友链页必须同 host）</li>
+        <li>域名所有权验证（修改/删除时，防止恶意改动）</li>
         <li>URL 与头像可达性</li>
         <li>回链验证（抓取你的友链页确认已添加本站链接）</li>
       </ul>
-      <p><strong>校验通过</strong>：自动写入友链文件，触发构建，CDN 刷新后即在本站友链页可见。</p>
-      <p><strong>校验失败</strong>：会在 Issue 中评论失败原因，Issue 自动关闭。修改 Issue 正文后，在该 Issue 评论 <code>/recheck</code> 即可重新校验，无需新建 Issue。</p>
-      <p class="muted">如需修改或删除已有友链，请走 PR 流程并完成域名所有权验证（详见 <a href="https://github.com/moaradc/moara-friends#怎么更新友链" target="_blank">README</a>）。</p>
+      <p><strong>校验通过</strong>：自动写入/更新/删除友链文件，触发构建，CDN 刷新后生效。</p>
+      <p><strong>校验失败</strong>：会在 Issue 中评论失败原因，Issue 自动关闭。修改 Issue 正文后，在该 Issue 评论对应命令（<code>/recheck</code>、<code>/edit</code>、<code>/delete</code>）即可重新触发，无需新建 Issue。</p>
+      <p class="muted">也可以不用表单，直接在 GitHub 上创建 Issue：标题以 <code>[Friend Link]</code>（新增）/ <code>[Edit]</code>（修改）/ <code>[Delete]</code>（删除）开头，正文按本表单预览的格式填写即可。</p>
     </div>
 
     <footer>
@@ -383,6 +445,9 @@
   var REPO_NAME = 'moara-friends';
   var ISSUE_NEW_URL = 'https://github.com/' + REPO_OWNER + '/' + REPO_NAME + '/issues/new';
 
+  // 当前模式：add（新增）/ edit（修改）/ delete（删除）
+  var MODE = 'add';
+
   // 字段引用
   var $name = document.getElementById('name');
   var $url = document.getElementById('url');
@@ -395,6 +460,86 @@
   var $preview = document.getElementById('issue-preview');
   var $btnSubmit = document.getElementById('btn-submit');
   var $btnCopy = document.getElementById('btn-copy-issue');
+
+  // 模式相关元素
+  var $cardBacklink = document.getElementById('card-backlink');
+  var $cardForm = document.getElementById('card-form');
+  var $modeDesc = document.getElementById('mode-desc');
+  var $ownershipNotice = document.getElementById('ownership-notice');
+  var $formTip = document.getElementById('form-tip');
+  var $editTip = document.getElementById('edit-tip');
+  var $deleteTip = document.getElementById('delete-tip');
+  var $formTitle = document.getElementById('form-title');
+  var $filenameHint = document.getElementById('filename-hint');
+
+  // delete 模式下隐藏的表单字段
+  var HIDDEN_FIELDS_IN_DELETE = [
+    'field-name', 'field-cover', 'field-avatar',
+    'field-url', 'field-friendPageUrl', 'field-description',
+  ];
+
+  // 模式描述文案
+  var MODE_DESCRIPTIONS = {
+    add: '首次申请友链。提交后自动校验并写入仓库，全程无需人工审核。',
+    edit: '修改已收录的友链信息（如换头像、改名字、改简介）。提交后需完成域名所有权验证。',
+    delete: '删除已收录的友链。只需填写文件名，提交后需完成域名所有权验证。',
+  };
+
+  // 模式切换
+  function applyMode(mode) {
+    MODE = mode;
+
+    // 按钮 active 状态
+    document.querySelectorAll('.mode-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
+    });
+
+    // 描述与提示
+    $modeDesc.textContent = MODE_DESCRIPTIONS[mode] || MODE_DESCRIPTIONS.add;
+    $ownershipNotice.style.display = (mode === 'add') ? 'none' : '';
+
+    // Step 1（回链卡片）：delete 模式隐藏
+    $cardBacklink.style.display = (mode === 'delete') ? 'none' : '';
+
+    // 表单卡片提示
+    $formTip.style.display = (mode === 'delete') ? 'none' : '';
+    $editTip.style.display = (mode === 'edit') ? '' : 'none';
+    $deleteTip.style.display = (mode === 'delete') ? '' : 'none';
+
+    // 表单字段：delete 模式只留 filename
+    HIDDEN_FIELDS_IN_DELETE.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = (mode === 'delete') ? 'none' : '';
+    });
+
+    // 文件名提示
+    if ($filenameHint) {
+      $filenameHint.textContent = (mode === 'add')
+        ? '只能用英文字母、数字、短横线、下划线；可选 .json 后缀。建议用站点域名'
+        : '要' + (mode === 'edit' ? '修改' : '删除') + '的友链文件名，必须与已收录的文件一致（可在仓库 data/friends/ 目录查看）';
+    }
+
+    // 表单标题
+    if ($formTitle) {
+      $formTitle.textContent = (mode === 'delete') ? '填写删除信息' : '填写站点资料';
+    }
+
+    // 重新编号步骤（可见卡片的 num 递增）
+    renumberSteps();
+
+    updatePreview();
+  }
+
+  // 重新编号可见卡片的步骤号
+  function renumberSteps() {
+    var n = 1;
+    [$cardBacklink, $cardForm, document.getElementById('card-submit')].forEach(function (card) {
+      if (!card) return;
+      if (card.style.display === 'none') return;
+      var num = card.querySelector('h2 .num');
+      if (num) num.textContent = String(n++);
+    });
+  }
 
   // 校验规则
   function isNonEmpty(s) { return s && s.trim().length > 0; }
@@ -445,11 +590,22 @@
     }
   }
 
-  // 实时校验
+  // 实时校验（按模式跳过不适用字段）
   function validate() {
     var ok = true;
     var errors = [];
+    var isDelete = (MODE === 'delete');
 
+    if (isDelete) {
+      // delete 模式：只校验文件名
+      if (!isNonEmpty($filename.value)) { setError($filename, '请填写要删除的文件名'); ok = false; }
+      else if (!isValidFilename($filename.value)) {
+        setError($filename, '只能用英文字母、数字、短横线、下划线，可选 .json 后缀'); ok = false;
+      } else setError($filename, '');
+      return { ok: ok, errors: errors };
+    }
+
+    // add / edit 模式：全字段校验
     if (!isNonEmpty($name.value)) { setError($name, '请填写站点名称'); ok = false; }
     else if ($name.value.length > 60) { setError($name, '名称最长 60 字符'); ok = false; }
     else setError($name, '');
@@ -505,10 +661,22 @@
     return { ok: ok, errors: errors };
   }
 
+  function normalizeFilename(s) {
+    if (!s) return s;
+    return s.endsWith('.json') ? s : s + '.json';
+  }
+
   // 生成 Issue body（与服务端 parseApplication 对齐）
-  // 字段顺序：name → cover → avatar → url → friendPageUrl → description → filename
+  // add / edit：完整字段；delete：仅 Filename
   function buildIssueBody() {
     var lines = [];
+    if (MODE === 'delete') {
+      lines.push('## Friend Link Delete');
+      lines.push('');
+      lines.push('- Filename: ' + normalizeFilename($filename.value));
+      return lines.join('\n');
+    }
+
     lines.push('## Friend Link Application');
     lines.push('');
     lines.push('- Site Name: ' + ($name.value || '').trim());
@@ -522,28 +690,30 @@
     return lines.join('\n');
   }
 
-  function normalizeFilename(s) {
-    if (!s) return s;
-    return s.endsWith('.json') ? s : s + '.json';
-  }
-
-  // 生成 Issue title
+  // 生成 Issue title（前缀决定 bot 的处理流程）
   function buildIssueTitle() {
+    if (MODE === 'delete') {
+      var fname = normalizeFilename(($filename.value || '').trim()) || '未命名';
+      return '[Delete] ' + fname;
+    }
+    var prefix = (MODE === 'edit') ? '[Edit] ' : '[Friend Link] ';
     var name = ($name.value || '').trim() || '未命名站点';
-    return '[Friend Link] ' + name;
+    return prefix + name;
   }
 
   // 更新预览
   function updatePreview() {
     var v = validate();
-    if (!v.ok && ($name.value || $url.value || $friendPageUrl.value || $filename.value)) {
-      $preview.textContent = buildIssueBody() + '\n\n⚠️ 表单还有错误，请先修正：\n - ' + v.errors.join('\n - ');
+    var hasInput = isNonEmpty($filename.value) ||
+      (!MODE || MODE !== 'delete') && ($name.value || $url.value || $friendPageUrl.value);
+    if (!v.ok && hasInput) {
+      $preview.textContent = buildIssueTitle() + '\n\n' + buildIssueBody() + '\n\n⚠️ 表单还有错误，请先修正：\n - ' + v.errors.join('\n - ');
       $btnSubmit.disabled = true;
     } else if (!v.ok) {
       $preview.textContent = '请先完成上方表单填写...';
       $btnSubmit.disabled = true;
     } else {
-      $preview.textContent = buildIssueBody();
+      $preview.textContent = buildIssueTitle() + '\n\n' + buildIssueBody();
       $btnSubmit.disabled = false;
     }
   }
@@ -562,6 +732,13 @@
   });
   $confirmBacklink.addEventListener('change', updatePreview);
 
+  // 模式切换事件
+  document.querySelectorAll('.mode-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      applyMode(btn.getAttribute('data-mode'));
+    });
+  });
+
   $btnSubmit.addEventListener('click', function () {
     var v = validate();
     if (!v.ok) {
@@ -574,7 +751,7 @@
   });
 
   $btnCopy.addEventListener('click', function () {
-    var body = buildIssueBody();
+    var body = buildIssueTitle() + '\n\n' + buildIssueBody();
     navigator.clipboard.writeText(body).then(function () {
       $btnCopy.textContent = '已复制 ✓';
       setTimeout(function () { $btnCopy.textContent = '复制 Issue 正文'; }, 1500);
@@ -602,8 +779,8 @@
     });
   });
 
-  // 初始化预览
-  updatePreview();
+  // 初始化：默认 add 模式
+  applyMode('add');
 })();
 </script>
 </body>
