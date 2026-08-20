@@ -2,46 +2,22 @@
  * scripts/validate-issue.mjs
  *
  * Issue 路径校验脚本，被 .github/workflows/issue-bot.yml 调用。
- * 监听 issues.opened / issue_comment.created，按 Issue 标题前缀路由操作：
- *   - [Friend Link]：新增友链
- *   - [Edit]：修改已有友链（需域名所有权验证）
- *   - [Delete]：删除已有友链（需域名所有权验证）
- *
- * 评论命令（仅 [Friend Link] / [Edit] / [Delete] 标题的 Issue 可触发，
- * 在其余 Issue / PR 上评论这些命令无任何作用；仅 Issue 创建者和管理员可触发）：
- *   - /recheck：按 Issue 标题前缀重新触发对应流程
- *   - /edit：触发修改流程
- *   - /delete：触发删除流程
- *
- * 设计原则：
- *   - 浏览器只生成预填 Issue 草稿 URL，不持有仓库写权限
- *   - 字段、SSRF、可达性、回链校验规则与 PR 路径完全一致（复用 lib/validate.mjs）
- *   - 修改/删除的域名所有权验证与 PR 路径（validate-pr.mjs）一致：
- *     DNS TXT 记录 / 网站根目录验证文件，验证码绑定 Issue 编号（moara-friends=<编号>）
- *   - 用 Issue 评论里的隐藏 marker 实现幂等，防止事件重复投递
- *   - bot 以 github-actions[bot] 身份提交，使用仓库默认 GITHUB_TOKEN
+ * 按 Issue 标题前缀路由操作：[Friend Link] 新增 / [Edit] 修改 / [Delete] 删除。
+ * 修改/删除需域名所有权验证（验证码 moara-friends=<Issue编号>）。
+ * 评论命令 /recheck、/edit、/delete 仅在上述三种前缀的 Issue 上生效
+ * （仅 Issue 创建者和管理员可触发），在其余 Issue / PR 上无任何作用。
  *
  * 入口：runIssueBot({ mode, github, core, context, env })
- *   - mode: 'opened' | 'command' | 'review'
- *     · opened：处理刚提交的 Issue（按标题前缀自动路由，无需评论）
- *     · command：处理 Issue 评论中的 /recheck、/edit、/delete 命令
- *     · review：扫描所有开放友链 Issue 并处理（手动 dispatch 用）
+ *   - opened：处理刚提交的 Issue（按标题前缀自动路由，无需评论）
+ *   - command：处理 Issue 评论中的斜杠命令
+ *   - review：扫描所有开放友链 Issue（手动 dispatch 用）
  *
- * Issue body 字段格式（由 apply.html 生成，新增/修改共用）：
- *   ## Friend Link Application
+ * 校验规则与 PR 路径（validate-pr.mjs）一致，共享 lib/validate.mjs。
+ * 幂等靠评论里的隐藏 marker；bot 以 github-actions[bot] 身份提交。
  *
- *   - Site Name: 站点名称
- *   - Site URL: https://example.com
- *   - Friend Page URL: https://example.com/friends
- *   - Avatar URL: https://example.com/avatar.png
- *   - Short Description: 站点简介
- *   - Filename: example.json
- *   - Reciprocal Link Added: yes
- *
- * 删除 Issue body 只需要 Filename 字段：
- *   ## Friend Link Delete
- *
- *   - Filename: example.json
+ * Issue body 由 apply.html 生成。新增/修改共用申请模板（Site Name / Site URL /
+ * Friend Page URL / Avatar URL / Cover URL / Short Description / Filename），
+ * 删除只需 Filename 一个字段。
  */
 
 import {
@@ -375,13 +351,9 @@ async function commitAndPushFriendFile({ filename, content, targetBranch, worksp
     'commit', '-m', `feat: ${verb} friend link via issue (#${process.env.ISSUE_NUMBER || 'manual'})`,
   ], { cwd: workspace });
 
-  // push 重试：处理两种失败
-  // 1. 网络抖动：直接重试
-  // 2. non-fast-forward（并发场景：另一个 workflow run 同时 push 了）
-  //    → git pull --rebase 拿到远端最新状态，再 push
-  //    → rebase 不会冲突（每个 Issue 写不同文件名，data/friends/*.json 互不重叠）
-  //    → 但 friends.json 可能被 build.yml 修改，rebase 时若冲突用 -X ours 保留我们的版本
-  //      （friends.json 反正会被 build.yml 重建，谁的版本都无所谓）
+  // push 重试：网络抖动直接重试；non-fast-forward（并发 push）时
+  // pull --rebase 后重试。rebase 用 -X ours：各 Issue 写不同文件不会冲突，
+  // 唯一可能冲突的 friends.json 反正会被 build.yml 重建，谁的版本都行
   let pushOk = false;
   let lastErr = null;
   for (let i = 0; i < 3; i++) {
@@ -394,26 +366,20 @@ async function commitAndPushFriendFile({ filename, content, targetBranch, worksp
       const isNonFastForward = /non-fast-forward|fetch first|rejected/i.test(e.message);
 
       if (isNonFastForward) {
-        // 并发冲突：pull --rebase 拿到远端最新状态
-        // 用 -X ours 策略：rebase 冲突时保留我们的改动
-        // （实际上每个 Issue 写不同文件名，data/friends/*.json 不会冲突；
-        //  唯一可能冲突的是 friends.json，但 build.yml 会重建，谁的版本都行）
         try {
           gitExec([
             '-c', 'user.name=github-actions[bot]',
             '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-            '-c', 'rerere.enabled=false',  // 不记录 reuse 记录，避免污染
+            '-c', 'rerere.enabled=false',
             'pull', '--rebase', '-X', 'ours', 'origin', targetBranch,
           ], { cwd: workspace });
-          // rebase 后重试 push（不走 sleep，直接进下一轮循环）
         } catch (rebaseErr) {
-          // rebase 失败：abort rebase，避免污染工作目录
+          // rebase 失败：abort 以免污染工作目录
           try { gitExec(['rebase', '--abort'], { cwd: workspace }); } catch {}
           lastErr = `rebase failed: ${rebaseErr.message}`;
           await sleep(2000 * Math.pow(2, i));
         }
       } else {
-        // 网络抖动：等待后重试
         await sleep(2000 * Math.pow(2, i));
       }
     }
@@ -426,12 +392,9 @@ async function commitAndPushFriendFile({ filename, content, targetBranch, worksp
 }
 
 // ========== 评论构造 ==========
-// 统一的状态卡片格式：所有 bot 状态更新走同一条评论
-// 首次 create（发邮件），后续 update（不发邮件）
-
+// 状态卡片：所有流程状态走同一条评论（首次 create 发邮件，后续 update 不发）
+// phase: 'pending' | 'success' | 'fail'；marker 为该次操作的完成标记（幂等用）
 function buildStatusCard({ phase, title, body, marker, reprocess = false }) {
-  // phase: 'pending' | 'success' | 'fail'
-  // marker: '' | MARKER_ACCEPTED | MARKER_EDITED | MARKER_DELETED | MARKER_REJECTED
   const phaseIcon = phase === 'success' ? '✅' : phase === 'fail' ? '❌' : '🔄';
   const lines = [
     `${MARKER_STATUS_CARD}`,
@@ -783,8 +746,8 @@ async function processApplicationIssue({ octokit, owner, repo, issue, workspace,
       lines: [
         `缺少必要字段：${missingFields.join(', ')}`,
         '',
-        '请使用申请表单（apply.html 或博客 /friends 页面）生成的草稿提交，不要手工编辑 Issue 正文。',
-        '完整字段包括：Site Name / Site URL / Friend Page URL / Avatar URL（可选） / Short Description（可选） / Filename。',
+        '请编辑 Issue 正文补全字段后，评论本 Issue 重新触发。',
+        '完整字段包括：Site Name / Site URL / Friend Page URL / Avatar URL（可选） / Cover URL（可选） / Short Description（可选） / Filename。',
       ],
       retryCommand, reprocess: forceReprocess, reason: 'incomplete',
     });

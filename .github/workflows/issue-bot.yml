@@ -2,24 +2,14 @@ name: issue-bot
 
 # 友链 Issue 自动审核 + 写入仓库（新增 / 修改 / 删除）
 #
-# 设计：
-# - 监听 issues.opened（标题以 [Friend Link] / [Edit] / [Delete] 开头）：
-#     · [Friend Link]：新增友链
-#     · [Edit]：修改已有友链（需域名所有权验证）
-#     · [Delete]：删除已有友链（需域名所有权验证）
-# - 监听 issue_comment.created：评论 /recheck、/edit、/delete 触发对应流程
+# 触发：
+# - issues.opened：标题以 [Friend Link] / [Edit] / [Delete] 开头，按前缀自动路由
+# - issue_comment.created：上述三种前缀的 Issue 上评论 /recheck、/edit、/delete
+#   （!issue.pull_request 排除 PR 评论——PR 走 auto-pr.yml，不能被 Issue 流程误处理）
 # - workflow_dispatch.review：批量重试所有开放的友链 Issue
 #
-# - 浏览器只生成预填 Issue 草稿 URL，不持有仓库写权限
-# - 校验通过后直接 git push data/friends/<filename>.json
-# - 触发 build.yml 重建 friends.json + 刷 jsDelivr
-# - 修改/删除需域名所有权验证（DNS TXT / 验证文件，与 PR 路径规则一致）
-# - 当前不做冷却等待（COOLDOWN_MS=0），预留位置可调
-#
-# 重新处理规则：
-# - 已 accepted/edited/deleted 的 Issue 不重试（避免重复写入；
-#   例外：/edit 显式触发时允许对已修改过的 Issue 再次修改）
-# - 已 rejected 的 Issue 允许重试（用户修复后评论对应命令）
+# 校验通过后直接 git push data/friends/<filename>.json 并触发 build.yml。
+# 校验规则与幂等逻辑见 scripts/validate-issue.mjs。
 
 on:
   issues:

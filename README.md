@@ -1,270 +1,179 @@
 # moara-friends
 
-沫然Blog 的友链仓库。提交 Issue 或 PR 即可添加/修改/删除友链，自动校验。
+沫然Blog 的友链仓库。提 Issue（推荐）或 PR，机器人自动校验，通过就自动生效，全程无需人工审核。
 
-## 怎么添加友链
+## 一张表看懂
 
-提供两种申请方式，任选其一：
+| 你想做什么 | Issue 标题写什么 | 要填什么 |
+|---|---|---|
+| 添加友链 | `[Friend Link] 站点名` | 完整站点资料 |
+| 修改友链 | `[Edit] 站点名` | 修改后的完整资料 |
+| 删除友链 | `[Delete] 文件名` | 只填文件名 |
 
-- **方式一：网页表单（推荐）** —— 在线填写表单 → 登录 GitHub 提交 Issue → 自动校验
-- **方式二：PR** —— Fork 仓库 → 编辑 JSON → 提交 PR → 自动校验合并
+标题对上号，机器人就知道该干什么。Issue 一提交就自动处理，不用评论任何命令。
 
----
+最省事的用法：打开 [apply.html](./apply.html) 表单，选好操作模式，它会帮你把标题和正文都生成好。
 
-### 方式一：网页表单（推荐）
+## 添加友链
 
-#### 1. 先在你的友链页加上我的链接
+### 第 1 步：先把我的链接挂到你的友链页
 
-在你的网站的友链页面，添加一个指向本站的链接：`https://blog.945426.xyz`
+在你的友链页加上：`https://blog.945426.xyz`
 
-**这一步必须先做**——提交后会自动抓取你的友链页检查是否已添加本站链接。
+**这步必须先做**——提交后机器人会去抓你的友链页，找不到我的链接就直接拒绝。
 
-#### 2. 打开申请表单
+### 第 2 步：提交 Issue
 
-打开 [`apply.html`](./apply.html)（直接点击或在浏览器中访问 `https://github.com/moaradc/moara-friends/blob/main/apply.html` 后点右上角「Raw」或下载到本地用浏览器打开）。
+两种办法任选：
 
-#### 3. 填写并提交
+- **用表单（推荐）**：打开 [apply.html](./apply.html)，选「申请友链」，填好点「登录 GitHub 并提交」，在 GitHub 页面点 **Submit new issue** 就行
+- **手动提**：新建 Issue，标题以 `[Friend Link]` 开头，正文按这个格式填：
 
-表单会校验字段格式，生成一个 GitHub Issue 草稿链接：
+```markdown
+## Friend Link Application
 
-1. 勾选「我已在友链页添加本站链接」
-2. 填写：站点名称 / 站点 URL / 友链页 URL / 头像（可选）/ 简介（可选）/ 文件名
-3. 点「登录 GitHub 并提交」→ 跳转到 GitHub Issue 创建页
-4. 在 GitHub 页面确认内容，点 **Submit new issue** 正式提交
+- Site Name: 示例博客
+- Avatar URL: https://example.com/avatar.png
+- Site URL: https://example.com
+- Friend Page URL: https://example.com/friends
+- Short Description: 一两句话介绍
+- Filename: example.json
+```
 
-> 也可以不用表单，直接在 GitHub 上创建 Issue：标题以 `[Friend Link]` 开头，正文按表单预览的字段格式（`- Site Name: ...` 等列表项）填写即可
+其中 Avatar URL、Cover URL、Short Description 是可选的，其他必填。Filename 是你的友链在仓库里的文件名，建议用你的域名。
 
-#### 4. 等待自动审核
+### 第 3 步：等结果（约 1-2 分钟）
 
-提交后 `issue-bot` workflow 会自动处理（约 1-2 分钟）：
+机器人会自动校验：字段格式、内网地址拦截、域名一致性、链接能不能访问、你的友链页有没有我的链接。
 
-- **校验通过**：自动写入 `data/friends/<filename>.json`，触发构建，CDN 刷新后即可在本站友链页看到
-- **校验失败**：会在 Issue 中评论失败原因，Issue 关闭。**无需新建 Issue**，按下方触发重新校验即可
+- **通过**：自动写入仓库、触发构建，CDN 刷新后就能在本站友链页看到
+- **失败**：机器人会在 Issue 里评论具体原因
 
-#### 5. 校验失败后如何重新校验
+### 失败了怎么办？
 
-修改 Issue 正文（编辑上方描述），然后在该 Issue 评论 `/recheck` 触发重新校验。
+**不用新建 Issue**。两个动作：
 
-即使 Issue 已关闭，评论 `/recheck` 也可以触发（bot 会自动帮你重新打开）。
+1. 编辑 Issue 正文，把错的地方改掉
+2. 在该 Issue 评论 `/recheck`
 
-> 失败评论底部自带一个「🔄 重新处理」折叠块，展开即可看到说明
->
-> 已通过的 Issue 不会被重复触发。已失败的 Issue 可重新校验，直到通过或放弃
->
-> **权限**：只有 Issue 创建者和仓库管理员能触发 `/recheck`。陌生人评论 `/recheck` 会被拒绝并提示
->
-> 为避免频繁邮件打扰，所有状态更新会合并到同一条评论
->
-> 修改/删除已有友链见下方「怎么更新友链」「怎么删除友链」，同样支持 Issue 自助操作
+机器人会重新校验。Issue 已关闭也没关系，评论命令会自动重新打开。可以无限次重试。
 
----
+## 修改友链
 
-### 方式二：PR
+比如换头像、改名、改简介。两种办法任选：
 
-#### 1. 先在你的友链页加上我的链接
+- **用表单（推荐）**：打开 [apply.html](./apply.html)，切到「修改友链」模式
+- **手动提**：新建 Issue，标题以 `[Edit]` 开头，正文格式和添加友链一样，但 Filename 必须填**已收录的那个文件名**（去仓库 `data/friends/` 目录找你的文件）
 
-在你的网站的友链页面，添加一个指向本站的链接：`https://blog.945426.xyz`
+**注意：修改是整体替换**。正文里填什么，文件就变成什么样。比如你留空了头像，改完后头像就没了——所以要把完整信息都填上，不是只填变化的部分。
 
-**这一步必须先做**——提交 PR 时会自动检查你的友链页有没有我的链接，没有会被拒绝
+也可以直接在当年通过申请的那个 `[Friend Link]` Issue 里操作：编辑正文为新的信息，然后评论 `/edit`。
 
-#### 2. Fork 仓库
+修改已有友链需要**域名所有权验证**（防止别人乱改你的资料），见下面专门一节。
 
-点右上角 Fork，把仓库复制到你的账号下
+## 删除友链
 
-#### 3. 新建友链文件
+- **用表单（推荐）**：打开 [apply.html](./apply.html)，切到「删除友链」模式，只需填文件名
+- **手动提**：新建 Issue，标题以 `[Delete]` 开头，正文只要一个字段：
 
-在你的 Fork 里，进入 `data/friends/` 目录，新建一个 JSON 文件。文件名随意，建议用你的站点名（如 `example.json`）
+```markdown
+## Friend Link Delete
 
-#### 4. 填写友链信息
+- Filename: example.json
+```
 
-按下面的模板填写：
+也可以直接在当年的 `[Friend Link]` Issue 里评论 `/delete`。
+
+删除同样需要域名所有权验证。
+
+## 域名所有权验证（修改/删除必看）
+
+修改和删除动的是仓库里已有的数据，机器人得先确认你是这个网站的主人。确认方式二选一：
+
+| 方式 | 怎么做 |
+|---|---|
+| DNS TXT 记录 | 在你的域名（或 `_moara-friends.你的域名`）下加 TXT 记录，内容为验证码 |
+| 上传验证文件 | 在网站根目录放一个 `.moara-friends-verify.txt` 文件，内容为验证码，要求能直接访问到 |
+
+**验证码**长得像 `moara-friends=42`，结尾的数字就是 Issue（或 PR）的编号。机器人会在失败的评论里给出完整的验证码，照抄就行。
+
+**流程**：第一次提交必然失败（因为还没做验证），机器人评论里带详细指引 → 你按指引配好 DNS 或传好文件 → 回到该 Issue 评论 `/edit` 或 `/delete` 重新触发 → 通过后自动生效。
+
+## 评论命令速查
+
+| 命令 | 作用 |
+|---|---|
+| `/recheck` | 重新校验（按 Issue 标题走对应流程） |
+| `/edit` | 触发修改流程 |
+| `/delete` | 触发删除流程 |
+
+三条规则：
+
+- 只在标题以 `[Friend Link]` / `[Edit]` / `[Delete]` 开头的 Issue 上生效，其他 Issue 里评论这些命令没有任何反应
+- 只有 Issue 创建者和仓库管理员能用，陌生人评论会被拒绝
+- 所有状态更新合并显示在同一条评论里，不会刷屏
+
+## 不想用 Issue？走 PR 也行
+
+Fork 仓库 → 改 `data/friends/` 下的文件 → 提 PR → 校验通过自动合并。
+
+**添加**：新建 JSON 文件，文件名建议用域名（如 `example.json`），内容：
 
 ```json
 {
   "name": "站点名称",
-  "cover": "https://.../封面.jpg",
   "avatar": "https://.../头像.png",
   "url": "https://你的站点",
-  "description": "简介/描述",
+  "description": "简介",
   "backlink": "https://你的站点/友链页地址"
 }
 ```
 
-最小可用：
+只有 `name`、`url`、`backlink` 必填，其余可选。
 
-```json
-{
-  "name": "站点名称",
-  "url": "https://你的站点",
-  "backlink": "https://你的站点/友链页地址"
-}
-```
+**修改**：直接改你自己那个文件，提交 PR。
 
-#### 5. 提交 PR
+**删除**：删掉你自己那个文件，提交 PR。
 
-提交代码，创建 Pull Request
-
-校验通过 → 自动合并，CDN 缓存刷新后友链就会出现在我的博客上
-
-校验失败 → 会在 PR 里评论告诉你哪里不对，改完 push 到该 PR 或者关闭重新打开会重新校验
-
-## 怎么更新友链
-
-修改你自己的友链信息（如换头像、改名字、改简介），提供两种方式，任选其一：
-
-- **方式一：Issue（推荐）** —— 在线表单或直接提 Issue，自动校验更新
-- **方式二：PR** —— Fork 仓库 → 修改 JSON → 提交 PR
-
-### 方式一：Issue（推荐）
-
-#### 1. 提交修改 Issue
-
-任选一种：
-
-- **用表单**：打开 [`apply.html`](./apply.html)，切到「修改友链」模式，填写修改后的完整信息（Filename 必须与已收录的文件一致），提交
-- **手动创建**：新建 Issue，标题以 `[Edit]` 开头（如 `[Edit] 示例博客`），正文按申请时的字段格式填写修改后的完整信息：
-
-  ```markdown
-  ## Friend Link Application
-
-  - Site Name: 示例博客
-  - Cover URL:
-  - Avatar URL: https://example.com/avatar.png
-  - Site URL: https://example.com
-  - Friend Page URL: https://example.com/friends
-  - Short Description: 修改后的简介
-  - Filename: example.json
-  - Reciprocal Link Added: yes
-  ```
-
-也可以直接在原来通过申请的 `[Friend Link]` Issue 里：编辑 Issue 正文为修改后的信息，然后评论 `/edit` 触发修改。
-
-#### 2. 完成域名所有权验证
-
-修改操作需要域名所有权验证（防止恶意修改）。提交后 bot 会自动校验，首次会因验证未完成而失败，并在 Issue 评论中给出具体操作指引。
-
-#### 3. 验证通过后重新触发
-
-按评论指引完成验证（DNS TXT 记录或上传验证文件，验证码绑定 Issue 编号，格式 `moara-friends=<Issue编号>`），然后在该 Issue 评论 `/edit` 重新触发，校验通过即自动更新。
-
-> **权限**：只有 Issue 创建者和仓库管理员能触发 `/edit`。已应用过修改的 Issue 可再次评论 `/edit` 重复修改（每次都会重新做域名所有权验证）
-
-### 方式二：PR
-
-1. Fork 仓库（如果之前 Fork 过，先 Sync fork 与本仓库同步）
-2. 修改 `data/friends/` 下你自己的 JSON 文件
-3. 提交 PR
-
-**更新操作需要域名所有权验证**，因为涉及修改已有数据。验证方式任选其一：
-
-### 方式 A：DNS TXT 记录
-
-在你的域名下添加 DNS TXT 记录：
-
-- 主机记录：`@`（根域名）或 `_moara-friends`
-- 记录类型：TXT
-- 记录内容：`moara-friends=<PR编号>`
-
-例如你的 PR 编号是 42，记录内容就是 `moara-friends=42`
-
-### 方式 B：文件验证
-
-在你的网站根目录上传文件 `.moara-friends-verify.txt`：
-
-- 文件内容：`moara-friends=<PR编号>`
-
-例如你的 PR 编号是 42，文件内容就是 `moara-friends=42`
-
-文件需要能通过 `https://你的域名/.moara-friends-verify.txt` 直接访问。
-
-> 两种方式任选其一，验证通过后即可合并。验证码绑定 PR 编号，每次 PR 不同
-
-## 怎么删除友链
-
-删除你自己的友链，提供两种方式，任选其一：
-
-### 方式一：Issue（推荐）
-
-任选一种：
-
-- **用表单**：打开 [`apply.html`](./apply.html)，切到「删除友链」模式，填写要删除的友链文件名，提交
-- **手动创建**：新建 Issue，标题以 `[Delete]` 开头（如 `[Delete] example.json`），正文只需包含 Filename：
-
-  ```markdown
-  ## Friend Link Delete
-
-  - Filename: example.json
-  ```
-
-也可以直接在原来通过申请的 `[Friend Link]` Issue 里评论 `/delete` 触发删除。
-
-删除操作同样需要域名所有权验证（方式同上，验证码绑定 Issue 编号：`moara-friends=<Issue编号>`）。首次提交会收到验证指引评论，完成验证后评论 `/delete` 重新触发即可。
-
-> **权限**：只有 Issue 创建者和仓库管理员能触发 `/delete`
-
-### 方式二：PR
-
-1. Fork 仓库（如果之前 Fork 过，先 Sync fork 与本仓库同步）
-2. 删除 `data/friends/` 下你自己的 JSON 文件
-3. 提交 PR
-
-删除操作同样需要域名所有权验证（方式同上，验证码绑定 PR 编号）
+PR 方式的修改/删除同样要域名所有权验证，验证码绑定 PR 编号（`moara-friends=<PR编号>`）。校验失败会在 PR 里评论原因，改完 push 上去自动重新校验；关闭的 PR 重新打开也能触发。
 
 ## 字段说明
 
 | 字段 | 必填 | 说明 |
 |---|---|---|
 | `name` | ✅ | 站点名称 |
-| `cover` | ❌ | 封面图地址（不校验连通性） |
+| `url` | ✅ | 站点地址 |
+| `backlink` | ✅ | 你的友链页地址（不是首页） |
 | `avatar` | ❌ | 头像图片地址 |
-| `url` | ✅ | 站点地址，以 `https://` 开头 |
-| `description` | ❌ | 简介/描述 |
-| `backlink` | ✅ | 你的友链页地址 |
+| `cover` | ❌ | 封面图地址（不检查能不能访问） |
+| `description` | ❌ | 简介 |
 
-> `backlink` 填你自己网站上那个友链页的地址，不是首页。比如你的友链页是`https://example.com/links`，就填这个
+> `backlink` 填你自己网站上那个友链页的地址。比如友链页是 `https://example.com/links`，就填这个。
+
+> Issue 表单里的 Filename 字段对应仓库 `data/friends/` 下的文件名，只能用字母、数字、短横线、下划线。
 
 ## 常见问题
 
-**Q: 校验提示"回链验证未通过"怎么办？**
+**Q: 提示「回链验证未通过」？**
 
-A: 说明在你的友链页里没找到我的链接。请确认：
-1. 链接已经添加到友链页
-2. 链接地址是 `https://blog.945426.xyz` 或 `https://blog.945426.xyz/`
-3. 添加后可能需要等几分钟让 CDN 缓存刷新
+你的友链页里没找到我的链接。检查三点：
 
-**Q: 更新/删除友链提示"域名所有权验证失败"怎么办？**
+1. 链接确实加到友链页了
+2. 链接地址是 `https://blog.945426.xyz`（要完全一致）
+3. 刚加的话，等几分钟让 CDN 缓存刷新，再评论命令重试
 
-A: 修改或删除已有友链需要验证你拥有该域名。任选一种方式：
-- DNS TXT 记录：在域名下添加 `moara-friends=<编号>` 的 TXT 记录
-- 文件验证：在网站根目录放 `.moara-friends-verify.txt`，内容为 `moara-friends=<编号>`
+**Q: 提示「域名所有权验证失败」？**
 
-> Issue 路径编号为 Issue 编号，PR 路径编号为 PR 编号。bot 的失败评论里会给出具体验证码，照着填即可
+按上面「域名所有权验证」一节操作。核心就一句话：把机器人评论里给的验证码，用 DNS 或文件的方式放到你的网站上，然后评论命令重试。
 
-**Q: PR 提交后多久能合并？**
+**Q: 提交后多久生效？**
 
-A: 校验通过会立即自动合并，CDN 缓存刷新就能在我的博客看到
+校验通过立即写入仓库并触发构建，通常 1-2 分钟，CDN 刷新后可见。
 
-**Q: PR 被关闭了怎么重新校验？**
+**Q: PR 有冲突怎么办？**
 
-A: 关闭的 PR 可以重新打开触发校验，或者开新 PR。如果 PR 有冲突，先 Sync fork 同步最新代码再修改
+先 Sync fork 同步最新代码，再改再推。
 
-**Q: Issue 校验失败后怎么重新申请？**
+**Q: 想批量重试所有失败的 Issue？**
 
-A: **不需要新建 Issue**。修改 Issue 正文后，在该 Issue 评论对应命令即可重新触发：
-
-- 新增 Issue（`[Friend Link]`）：评论 `/recheck`
-- 修改 Issue（`[Edit]`）：评论 `/edit`
-- 删除 Issue（`[Delete]`）：评论 `/delete`
-- 在 `[Friend Link]` Issue 里也可以评论 `/edit`、`/delete` 直接触发修改/删除
-
-这些命令只在标题以 `[Friend Link]` / `[Edit]` / `[Delete]` 开头的 Issue 上生效，在其他 Issue 里评论无任何作用。
-
-bot 会自动重新校验。已通过的 Issue 不会被重复触发；已失败的 Issue 可无限次重试。
-
-**Q: 想批量重试失败的 Issue 怎么办？**
-
-A: 仓库维护者可在 Actions 页面手动触发 `issue-bot` workflow（`workflow_dispatch`），会扫描所有开放的 `[Friend Link]` / `[Edit]` / `[Delete]` Issue 并重试处理。
-
-**Q: Issue 提交后多久能合并？**
-
-A: 校验通过会立即写入文件并触发构建，CDN 缓存刷新后即可在本站友链页看到，通常 1-2 分钟内完成。
+仓库维护者在 Actions 页面手动触发 `issue-bot` workflow，会扫描所有开放的友链 Issue 重新处理。
