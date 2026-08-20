@@ -704,16 +704,19 @@ async function processApplicationIssue({ octokit, owner, repo, issue, workspace,
     if (action === 'add') {
       if (allBodies.includes(MARKER_DELETED)) { hasDone = true; doneReason = 'already_deleted'; }
       else if (allBodies.includes(MARKER_EDITED) || allBodies.includes(MARKER_ACCEPTED)) { hasDone = true; doneReason = 'already_accepted'; }
-    } else {
-      hasDone = allBodies.includes(DONE_MARKERS[action]);
-      doneReason = 'already_edited';
+    } else if (action === 'edit') {
+      // edit 同样要认 deleted：已删除的友链文件已不在仓库，不能再修改
+      if (allBodies.includes(MARKER_DELETED)) { hasDone = true; doneReason = 'already_deleted'; }
+      else { hasDone = allBodies.includes(MARKER_EDITED); doneReason = 'already_edited'; }
     }
     const hasRejected = allBodies.includes(MARKER_REJECTED);
 
     if (hasDone) {
-      // /edit 允许对已修改过的 Issue 再次修改（显式触发；
-      // 写入幂等，且每次都会重新做域名所有权验证，安全）
-      if (!(action === 'edit' && forceReprocess)) {
+      // /edit 允许对「已修改过」的 Issue 再次修改（显式触发；
+      // 写入幂等，且每次都会重新做域名所有权验证，安全）。
+      // 已删除（deleted）的除外：文件已不在仓库，修改无意义
+      const editRetry = action === 'edit' && doneReason === 'already_edited' && forceReprocess;
+      if (!editRetry) {
         log(`⏭️  Issue #${issue_number} 已完成（${doneReason}），跳过`);
         return { skipped: true, reason: doneReason };
       }
@@ -1324,7 +1327,7 @@ export async function runIssueBot({ mode, github, core, context, env }) {
       const doneMessages = {
         already_accepted: '此 Issue 已通过校验（友链已写入仓库），无需重新校验。如需修改友链信息，可编辑本 Issue 正文后评论 `/edit`；如需删除，评论 `/delete`（均需域名所有权验证）。',
         already_edited: '此 Issue 的修改已应用。如需再次修改，请编辑本 Issue 正文后重新评论 `/edit`。',
-        already_deleted: '该友链已删除，无需重复操作。',
+        already_deleted: '该友链已删除，无法修改或重复删除。如需重新添加，请提交 `[Friend Link]` 标题的新 Issue。',
       };
       if (doneMessages[result.reason]) {
         core.info(`Issue #${issue.number} 已完成（${result.reason}），处理跳过逻辑`);
