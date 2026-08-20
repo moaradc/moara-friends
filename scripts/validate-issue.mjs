@@ -615,11 +615,12 @@ async function failAndClose({ octokit, owner, repo, issue_number, core, title, l
 // ========== 域名所有权验证（修改/删除共用，与 validate-pr.mjs 规则一致）==========
 // 验证码绑定 Issue 编号（PR 路径绑定 PR 编号，规则相同）
 // 两种方式任选其一：DNS TXT 记录、网站根目录验证文件
+// 安全注意：method 只返回方式名称，不暴露具体 URL / 域名（防止泄露验证文件地址）
 async function verifyDomainOwnership(hostname, verificationCode) {
   // A：DNS TXT 记录
   const dnsResult = await verifyDnsTxt(hostname, verificationCode);
   if (dnsResult) {
-    return { verified: true, method: `DNS TXT (${dnsResult})` };
+    return { verified: true, method: 'DNS TXT' };
   }
 
   // B：文件验证（.moara-friends-verify.txt）
@@ -628,7 +629,7 @@ async function verifyDomainOwnership(hostname, verificationCode) {
     return { verified: false, ssrfError: fileResult.error };
   }
   if (fileResult && fileResult.url) {
-    return { verified: true, method: `文件验证 (${fileResult.url})` };
+    return { verified: true, method: '文件验证' };
   }
 
   return { verified: false };
