@@ -65,7 +65,7 @@ jobs:
             startsWith(github.event.issue.title, '[Friend Link]') ||
             startsWith(github.event.issue.title, '[Edit]') ||
             startsWith(github.event.issue.title, '[Delete]')
-          ) && (
+          ) && !github.event.issue.pull_request && (
             startsWith(github.event.comment.body, '/recheck') ||
             startsWith(github.event.comment.body, '/edit') ||
             startsWith(github.event.comment.body, '/delete')

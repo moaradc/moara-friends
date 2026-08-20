@@ -257,6 +257,8 @@ A: **不需要新建 Issue**。修改 Issue 正文后，在该 Issue 评论对�
 - 删除 Issue（`[Delete]`）：评论 `/delete`
 - 在 `[Friend Link]` Issue 里也可以评论 `/edit`、`/delete` 直接触发修改/删除
 
+这些命令只在标题以 `[Friend Link]` / `[Edit]` / `[Delete]` 开头的 Issue 上生效，在其他 Issue 里评论无任何作用。
+
 bot 会自动重新校验。已通过的 Issue 不会被重复触发；已失败的 Issue 可无限次重试。
 
 **Q: 想批量重试失败的 Issue 怎么办？**

@@ -7,10 +7,11 @@
  *   - [Edit]：修改已有友链（需域名所有权验证）
  *   - [Delete]：删除已有友链（需域名所有权验证）
  *
- * 评论命令（参考 /recheck 触发逻辑，仅 Issue 创建者和管理员可触发）：
+ * 评论命令（仅 [Friend Link] / [Edit] / [Delete] 标题的 Issue 可触发，
+ * 在其余 Issue / PR 上评论这些命令无任何作用；仅 Issue 创建者和管理员可触发）：
  *   - /recheck：按 Issue 标题前缀重新触发对应流程
- *   - /edit：触发修改流程（可用于 [Friend Link] / [Edit] Issue）
- *   - /delete：触发删除流程（可用于 [Friend Link] / [Delete] Issue）
+ *   - /edit：触发修改流程
+ *   - /delete：触发删除流程
  *
  * 设计原则：
  *   - 浏览器只生成预填 Issue 草稿 URL，不持有仓库写权限
@@ -1288,10 +1289,19 @@ export async function runIssueBot({ mode, github, core, context, env }) {
       return;
     }
 
-    // 标题前缀检查：必须是三种前缀之一的 Issue
+    // 仅处理真正的 Issue：PR 评论同样触发 issue_comment 事件，排除
+    // （PR 走 auto-pr.yml 校验流程，不归 issue-bot 管）
+    if (issue.pull_request) {
+      core.info(`评论位于 PR #${issue.number} 上（非 Issue），跳过`);
+      return;
+    }
+
+    // 标题前缀限制：/recheck、/edit、/delete 仅在
+    // [Friend Link] / [Edit] / [Delete] 标题的 Issue 上生效；
+    // 其余 Issue 评论命令无任何作用（不处理、不评论、静默跳过）
     const issueAction = getIssueAction(issue.title);
     if (!issueAction) {
-      core.info(`Issue #${issue.number} 标题前缀不受支持，跳过`);
+      core.info(`Issue #${issue.number} 标题前缀不受支持（需为 [Friend Link] / [Edit] / [Delete] 之一），跳过`);
       return;
     }
 
@@ -1372,7 +1382,8 @@ export async function runIssueBot({ mode, github, core, context, env }) {
 
     const targets = openIssues
       .map((i) => ({ issue: i, action: getIssueAction(i.title) }))
-      .filter((t) => t.action);
+      // 排除 PR（issues.listForRepo 会把 PR 一并返回，PR 标题即使带前缀也不归这里处理）
+      .filter((t) => t.action && !t.issue.pull_request);
 
     core.info(`找到 ${targets.length} 个开放的友链 Issue`);
 
