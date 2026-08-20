@@ -120,7 +120,6 @@ export function parseApplication(body = '') {
     cover:          values['cover url'] || '',
     description:    values['short description'] || '',
     filename:       values['filename'] || '',
-    reciprocalLinkAdded: values['reciprocal link added'] || '',
   };
 }
 
