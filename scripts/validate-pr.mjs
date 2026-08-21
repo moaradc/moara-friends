@@ -174,6 +174,7 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
   // 两种方式（任一通过即可）：DNS TXT 记录、文件验证
   let fileExistsInMain = false;
   let originalUrl = null;
+  let originalVip = false;
   try {
     const baseRes = await github.rest.repos.getContent({
       owner, repo, path: file.filename, ref: baseSha,
@@ -183,6 +184,7 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
       const raw = Buffer.from(baseRes.data.content, baseRes.data.encoding || 'base64').toString('utf-8');
       const parsed = JSON.parse(raw);
       if (parsed.url) originalUrl = parsed.url;
+      if (parsed.vip === true) originalVip = true;
     }
   } catch (e) {
     if (e.status !== 404) {
@@ -359,13 +361,24 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
       return;
     }
 
+    // vip 字段保护（与 Issue edit 路径一致）：
+    // - 源文件有 vip=true：PR 可以保留 vip，也可以不带 vip（自动补上，防误删）
+    // - 源文件没有 vip：PR 带 vip → 拒绝（擅自添加）
+    // - 新增文件（源文件不存在）：PR 带 vip → 拒绝
     if (Object.prototype.hasOwnProperty.call(data, 'vip')) {
-      await fail('检测到 vip 字段', [
-        'vip 字段仅站主直推可用，PR 不可携带',
-        `文件：${file.filename}`,
-        '请删除 vip 字段',
-      ]);
-      return;
+      if (!originalVip) {
+        await fail('检测到 vip 字段', [
+          'vip 字段仅站主直推可用',
+          `文件：${file.filename}`,
+          '该文件的源数据不含 vip，你无权添加。请删除 vip 字段',
+        ]);
+        return;
+      }
+      core.info('✓ 源文件含 vip=true，PR 保留 vip 字段');
+    } else if (originalVip) {
+      // 源文件有 vip 但 PR 没带 → 自动补上，防止误删
+      data.vip = true;
+      core.info('✓ 源文件含 vip=true，PR 未带 vip，自动补上防止误删');
     }
 
     // ── 4. SSRF 防护 ──
