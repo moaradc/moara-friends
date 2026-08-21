@@ -12,7 +12,7 @@
 | 修改友链 | 标题 `[Edit] 站点名`，正文填修改后的完整资料 | 改你自己的那个 JSON 文件 |
 | 删除友链 | 标题 `[Delete] 文件名`，正文只填文件名 | 删你自己的那个 JSON 文件 |
 
-- **Issue 最省事**：打开 [apply.html](./apply.html) 表单，选好操作模式，标题正文全部自动生成，登录 GitHub 点提交就行
+- **Issue 最省事**：打开 [友链页](https://blog.945426.xyz/links) 的「友链申请」，选好操作模式，登录 GitHub 点 Create 就行
 - **PR 适合熟悉 Git 的人**：本地改文件、走常规 PR 流程
 
 ---
@@ -33,7 +33,7 @@
 
 两种办法任选：
 
-- **用表单（推荐）**：打开 [apply.html](./apply.html)，选「申请友链」，填好点「登录 GitHub 并提交」，在 GitHub 页面点 **Submit new issue** 就行
+- **用表单（推荐）**：打开 [友链页](https://blog.945426.xyz/links) 的「友链申请」，选「新增 Add」，填好点「去提交申请」，在 GitHub 页面点 **Create** 就行
 - **手动提**：新建 Issue，标题以 `[Friend Link]` 开头，正文按这个格式填：
 
 ```markdown
@@ -43,8 +43,8 @@
 - Cover URL: https://example.com/cover.jpg
 - Avatar URL: https://example.com/avatar.png
 - Site URL: https://example.com
-- Friend Page URL: https://example.com/friends
 - Short Description: 一两句话介绍
+- Friend Page URL: https://example.com/friends
 - Filename: example.json
 ```
 
@@ -61,7 +61,7 @@ bot 会自动校验：
 
 比如换头像、改名、改简介。两种办法任选：
 
-- **用表单（推荐）**：打开 [apply.html](./apply.html)，切到「修改友链」模式
+- **用表单（推荐）**：打开 [友链页](https://blog.945426.xyz/links) 的「友链申请」，选「修改 Edit」
 - **手动提**：新建 Issue，标题以 `[Edit]` 开头，正文格式和添加友链一样，但 Filename 必须填**已收录的那个文件名**（去 `data/friends/` 目录找你的文件）
 
 **注意：修改是整体替换**。正文里填什么，文件就变成什么样。比如你留空了头像，改完后头像就没了——所以要把完整信息都填上，不是只填变化的部分
@@ -72,7 +72,7 @@ bot 会自动校验：
 
 ## 删除友链
 
-- **用表单（推荐）**：打开 [apply.html](./apply.html)，切到「删除友链」模式，只需填文件名
+- **用表单（推荐）**：打开 [友链页](https://blog.945426.xyz/links) 的「友链申请」，选「删除 Delete」，只需填文件名
 - **手动提**：新建 Issue，标题以 `[Delete]` 开头，正文只要一个字段：
 
 ```markdown
@@ -85,20 +85,20 @@ bot 会自动校验：
 
 删除同样需要**域名所有权验证**
 
-## 添加友链时校验失败怎么办
+## 新友链申请时校验失败怎么办
 
 **不用新建 Issue**。两个动作：
 
 1. 编辑 Issue 正文，把错的地方改掉
 2. 在该 Issue 评论 `/recheck`
 
-bot 会重新校验。Issue 已关闭也行，会自动重新打开。
+bot 会重新校验。Issue 已关闭也行，会自动重新打开。如果是修改已有友链则评论 `/edit`
 
 ## 评论命令速查
 
 | 命令 | 作用 |
 |---|---|
-| `/recheck` | 重新校验（针对新添加友链） |
+| `/recheck` | 重新校验（针对新友链申请） |
 | `/edit` | 触发修改流程（针对已有友链） |
 | `/delete` | 触发删除流程（针对已有友链） |
 
@@ -174,7 +174,7 @@ bot 会重新校验。Issue 已关闭也行，会自动重新打开。
 
 **验证码**即 `moara-friends=<编号>`，结尾的数字就是 Issue（或 PR）的编号。bot 也会在失败的评论里给出完整的验证码，照抄就行。**用完记得删除！**
 
-**流程**：你可以提前写好，否则第一次必然失败（因为还没做验证）。bot 评论里带详细指引 → 你按指引配好 DNS 或传好文件 → 回到该 Issue 评论：新添加友链写`/recheck`, 已有友链写 `/edit` → 通过后自动生效
+**流程**：你可以提前写好，否则第一次必然失败（因为还没做验证）。bot 评论里带详细指引 → 你按指引配好 DNS 或传好文件 → 回到该 Issue 评论：新友链申请写`/recheck`, 已有友链写 `/edit` → 通过后自动生效
 
 ## 字段说明
 
