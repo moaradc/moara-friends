@@ -361,10 +361,11 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
       return;
     }
 
-    // vip 字段保护（与 Issue edit 路径一致）：
-    // - 源文件有 vip=true：PR 可以保留 vip，也可以不带 vip（自动补上，防误删）
+    // vip 字段保护：
+    // - 源文件有 vip=true：PR 可以保留 vip（带 vip → 通过）
     // - 源文件没有 vip：PR 带 vip → 拒绝（擅自添加）
     // - 新增文件（源文件不存在）：PR 带 vip → 拒绝
+    // - 源文件有 vip 但 PR 主动删除 vip：不拦截（用户能看到源文件，主动删除即意图）
     if (Object.prototype.hasOwnProperty.call(data, 'vip')) {
       if (!originalVip) {
         await fail('检测到 vip 字段', [
@@ -375,10 +376,6 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
         return;
       }
       core.info('✓ 源文件含 vip=true，PR 保留 vip 字段');
-    } else if (originalVip) {
-      // 源文件有 vip 但 PR 没带 → 自动补上，防止误删
-      data.vip = true;
-      core.info('✓ 源文件含 vip=true，PR 未带 vip，自动补上防止误删');
     }
 
     // ── 4. SSRF 防护 ──
