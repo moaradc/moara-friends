@@ -361,8 +361,8 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
       return;
     }
 
-    // vip 字段保护（与 Issue edit 路径一致）：
-    // - 源文件有 vip=true：PR 可以保留 vip，也可以不带 vip（自动补上，防误删）
+    // vip 字段保护：
+    // - 源文件有 vip=true：PR 必须保留 vip（不带 vip → 拒绝，防止误删）
     // - 源文件没有 vip：PR 带 vip → 拒绝（擅自添加）
     // - 新增文件（源文件不存在）：PR 带 vip → 拒绝
     if (Object.prototype.hasOwnProperty.call(data, 'vip')) {
@@ -376,9 +376,12 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
       }
       core.info('✓ 源文件含 vip=true，PR 保留 vip 字段');
     } else if (originalVip) {
-      // 源文件有 vip 但 PR 没带 → 自动补上，防止误删
-      data.vip = true;
-      core.info('✓ 源文件含 vip=true，PR 未带 vip，自动补上防止误删');
+      // 源文件有 vip 但 PR 没带 → 拒绝，防止误删
+      await fail('缺少 vip 字段', [
+        `文件：${file.filename} 的源数据含 vip=true，修改时必须保留 vip 字段`,
+        '请在文件中添加 `"vip": true` 后重新提交',
+      ]);
+      return;
     }
 
     // ── 4. SSRF 防护 ──
