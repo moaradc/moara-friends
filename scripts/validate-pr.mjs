@@ -361,17 +361,12 @@ export async function runValidation({ owner, repo, pull_number, prHead, prAuthor
       return;
     }
 
-    // vip 字段保护：
-    // - 源文件有 vip=true：PR 可以保留 vip（带 vip → 通过）
-    // - 源文件没有 vip：PR 带 vip → 拒绝（擅自添加）
-    // - 新增文件（源文件不存在）：PR 带 vip → 拒绝
-    // - 源文件有 vip 但 PR 主动删除 vip：不拦截（用户能看到源文件，主动删除即意图）
+    // vip 字段保护
     if (Object.prototype.hasOwnProperty.call(data, 'vip')) {
       if (!originalVip) {
         await fail('检测到 vip 字段', [
-          'vip 字段仅站主直推可用',
           `文件：${file.filename}`,
-          '该文件的源数据不含 vip，你无权添加。请删除 vip 字段',
+          '该文件的源数据不含 vip，你无权添加，仅源文件包含或站主直推可用。请删除 vip 字段',
         ]);
         return;
       }
