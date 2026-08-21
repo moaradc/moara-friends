@@ -1,7 +1,6 @@
 {
   "name": "沫然Blog",
   "avatar": "https://blog.945426.xyz/assets/img/icon/moara.webp",
-  "description": "沫然（moara）的个人博客 —— 技术、生活、闲谈、创作、归档",
-  "url": "https://blog.945426.xyz/",
-  "vip": true
+  "description": "测试：不带 vip，应自动补上",
+  "url": "https://blog.945426.xyz/"
 }
