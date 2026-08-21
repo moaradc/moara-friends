@@ -601,7 +601,7 @@ function buildFailBody(title, lines, { reprocess = false, retryCommand = '/reche
 // ========== 失败处理 ==========
 // 统一的失败出口：更新状态卡片 + 关闭 Issue + 打标签
 async function failAndClose({ octokit, owner, repo, issue_number, core, title, lines, retryCommand = '/recheck', reprocess = false, reason = 'failed' }) {
-  const log = (msg) => core?.info?.(msg) ?? console.log(msg);
+  const log = (msg) => { if (core?.info) core.info(msg); else console.log(msg); };
   log(`❌ ${title}`);
   for (const l of lines) log(`  - ${l}`);
   await upsertStatusComment(octokit, owner, repo, issue_number,
@@ -654,7 +654,7 @@ function buildOwnershipFailLines(hostname, originalUrl, verificationCode) {
  *          失败：{ ok: false, result }（result 为 failAndClose 返回值，调用方直接 return）
  */
 async function verifyOwnershipOrFail({ octokit, owner, repo, issue_number, core, originalData, filename, retryCommand, reprocess }) {
-  const log = (msg) => core?.info?.(msg) ?? console.log(msg);
+  const log = (msg) => { if (core?.info) core.info(msg); else console.log(msg); };
   const verificationCode = `moara-friends=${issue_number}`;
 
   const originalUrl = originalData?.url;
@@ -733,7 +733,7 @@ async function verifyOwnershipOrFail({ octokit, owner, repo, issue_number, core,
 // ========== 单个 Issue 处理流程（新增 / 修改）==========
 async function processApplicationIssue({ octokit, owner, repo, issue, workspace, targetBranch, core, forceReprocess = false, action = 'add' }) {
   const issue_number = issue.number;
-  const log = (msg) => core?.info?.(msg) ?? console.log(msg);
+  const log = (msg) => { if (core?.info) core.info(msg); else console.log(msg); };
   const retryCommand = action === 'edit' ? '/edit' : '/recheck';
 
   log(`\n========== 处理 Issue #${issue_number}（${action}）: ${issue.title}${forceReprocess ? ' (强制重新处理)' : ''} ==========`);
@@ -1086,7 +1086,7 @@ async function processApplicationIssue({ octokit, owner, repo, issue, workspace,
 // ========== 单个 Issue 处理流程（删除）==========
 async function processDeleteIssue({ octokit, owner, repo, issue, workspace, targetBranch, core, forceReprocess = false }) {
   const issue_number = issue.number;
-  const log = (msg) => core?.info?.(msg) ?? console.log(msg);
+  const log = (msg) => { if (core?.info) core.info(msg); else console.log(msg); };
   const retryCommand = '/delete';
 
   log(`\n========== 处理 Issue #${issue_number}（delete）: ${issue.title}${forceReprocess ? ' (强制重新处理)' : ''} ==========`);
