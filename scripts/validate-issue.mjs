@@ -114,11 +114,11 @@ export function parseApplication(body = '') {
 
   return {
     name:           values['site name'] || '',
-    url:            values['site url'] || '',
-    friendPageUrl:  values['friend page url'] || '',
-    avatar:         values['avatar url'] || '',
     cover:          values['cover url'] || '',
+    avatar:         values['avatar url'] || '',
+    url:            values['site url'] || '',
     description:    values['short description'] || '',
+    friendPageUrl:  values['friend page url'] || '',
     filename:       values['filename'] || '',
   };
 }
