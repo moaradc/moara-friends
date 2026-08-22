@@ -1019,7 +1019,7 @@ async function processApplicationIssue({ octokit, owner, repo, issue, workspace,
   // ── 10. 写入文件并 push ──
   const stdData = standardizeFriendData(data);
   // 修改操作保留原有 vip 标记（vip 仅站主直推数据携带，Issue 申请数据不可能带 vip）
-  if (action === 'edit' && originalData?.vip === true) stdData.vip = true;
+  if (action === 'edit' && (originalData?.vip === true || originalData?.vip === false)) stdData.vip = originalData.vip;
   const content = JSON.stringify(stdData, null, 2) + '\n';
 
   let pushResult;
