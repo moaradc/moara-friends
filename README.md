@@ -123,7 +123,6 @@ bot 会重新校验。Issue 已关闭也行，会自动重新打开。如果是�
 ```json
 {
   "name": "站点名称",
-  "cover": "https://.../封面.jpg",
   "avatar": "https://.../头像.png",
   "url": "https://你的站点",
   "description": "简介/描述",
